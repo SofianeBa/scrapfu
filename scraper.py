@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from queue import Queue
 import sys
+import urllib.request
 from monster import Monster
 from concurrent import futures
 import time
@@ -69,34 +70,46 @@ def get_monster_info(url):
     driver = create_driver()
     driver.get(url)
     soup = BeautifulSoup(driver.page_source, 'lxml')
-    name = soup.find('h1', {'class': 'ak-return-link'})
-    family = soup.find('div', {'class': 'col-xs-8 ak-encyclo-detail-type'})
-    family = family.findChild('span', recursive=False)
-    levelRange = soup.find('div', {'class': 'col-xs-4 text-right ak-encyclo-detail-level'},text=True)
-    minLevel, maxLevel = parse_level_ranges(str.split(levelRange.text, sep="to"))
-    minHp, maxHp = parse_ranges(soup, 'HP:')
-    minAp, maxAp = parse_ranges(soup, "AP:")
-    minMp, maxMp = parse_ranges(soup, "MP:")
-    minEarthRes,maxEarthRes = parse_ranges(soup, "Earth:")
-    minAirRes, maxAirRes = parse_ranges(soup, "Air:")
-    minFireRes, maxFireRes = parse_ranges(soup, "Fire:")
-    minWaterRes, maxWaterRes = parse_ranges(soup, "Water:")
-    minNeutralRes, maxNeutralRes = parse_ranges(soup, "Neutral:")
-    name = str.strip(name.text)
-    family = family.text
-    monster = Monster(name, minLevel, maxLevel, family, 
-    minHp, maxHp, minAp, maxAp, minMp, maxMp, minEarthRes,
-    maxEarthRes, minWaterRes, maxWaterRes, minAirRes, maxAirRes, 
-    minFireRes, maxFireRes, minNeutralRes, maxNeutralRes)
-    driver.quit()
-    return monster
+    if soup.find('div', {'class': 'ak-404'}) == None:
+        print(url)
+        monsterImageNumber = ''.join(re.findall('[0-9]',url))
+        monsterImageLink = f'https://static.ankama.com/dofus/www/game/monsters/200/{monsterImageNumber}.png'
+        name = soup.find('h1', {'class': 'ak-return-link'})
+        family = soup.find('div', {'class': 'col-xs-8 ak-encyclo-detail-type'})
+        family = family.findChild('span', recursive=False)
+        levelRange = soup.find('div', {'class': 'col-xs-4 text-right ak-encyclo-detail-level'},text=True)
+        minLevel, maxLevel = parse_level_ranges(str.split(levelRange.text, sep="to"))
+        minHp, maxHp = parse_ranges(soup, 'HP:')
+        minAp, maxAp = parse_ranges(soup, "AP:")
+        minMp, maxMp = parse_ranges(soup, "MP:")
+        minEarthRes,maxEarthRes = parse_ranges(soup, "Earth:")
+        minAirRes, maxAirRes = parse_ranges(soup, "Air:")
+        minFireRes, maxFireRes = parse_ranges(soup, "Fire:")
+        minWaterRes, maxWaterRes = parse_ranges(soup, "Water:")
+        minNeutralRes, maxNeutralRes = parse_ranges(soup, "Neutral:")
+        name = str.strip(name.text)
+        family = family.text
+        monster = Monster(name, minLevel, maxLevel, family, 
+        minHp, maxHp, minAp, maxAp, minMp, maxMp, minEarthRes,
+        maxEarthRes, minWaterRes, maxWaterRes, minAirRes, maxAirRes, 
+        minFireRes, maxFireRes, minNeutralRes, maxNeutralRes)
+        urllib.request.urlretrieve(monsterImageLink, f"C:/DofusImages/{name}.png")
+        driver.quit()
+        return monster
+    else:
+        driver.quit()
+        return None
+    
 
 #def write_images_to_os
 #def write_monster_characterstics_to_db
 
 #move get_links_to_Monsters into a non-blocking thread. Do same for get_link_to_items
 get_link_to_monsters()
-with futures.ThreadPoolExecutor(max_workers=1) as executer:
+while not url_queue.empty():
+    print(url_queue.get())
+    
+with futures.ThreadPoolExecutor(max_workers=4) as executer:
     
     while not url_queue.empty():
         url = url_queue.get()
@@ -105,4 +118,5 @@ with futures.ThreadPoolExecutor(max_workers=1) as executer:
         for future in done:
            #put into database, write to file system
            monster = future.result
-           pass
+           if monster != None:
+               pass
