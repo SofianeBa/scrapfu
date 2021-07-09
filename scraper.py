@@ -8,6 +8,8 @@ from monster import Monster
 from concurrent import futures
 import time
 import re
+import os
+from azure.storage.blob import BlobClient, BlobServiceClient
 
 def create_driver():
     if sys.platform == 'win32':
@@ -19,16 +21,22 @@ def create_driver():
 base_url = "https://www.dofus.com"
 url_queue = Queue(maxsize=0)
 future_to_url = {}
+try:
+    connect_str = os.getenv('AZ_Connection_String')
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+except: 
+    print('oops!No environment variable by that name :(')
+    print('Unable to create blob_service_client and container_client')
 
 def create_full_url(base, addition):
     return base + addition
 
 def get_link_to_monsters():
     #need to find a better way to determine the amount of pages in the table. 
-    pageNumber = 0
+    pageNumber = 8
     driver = create_driver()
     driver.get(base_url+'/en/mmorpg/encyclopedia/monsters')
-    while pageNumber < 1:
+    while pageNumber < 10:
         pageNumber += 1
         soup = BeautifulSoup(driver.page_source, 'lxml')
         tbody = soup.find('tbody')
@@ -64,14 +72,15 @@ def parse_level_ranges(levels):
         end = begin
     return (begin,end)
         
+def save_monster_image(imageData, imageName):
+    blob_client = blob_service_client.get_blob_client(container='dofus-pics', blob=f'{imageName}.png',ov)
+    blob_client.upload_blob_from_url(imageData)
 
 def get_monster_info(url):
-    
     driver = create_driver()
     driver.get(url)
     soup = BeautifulSoup(driver.page_source, 'lxml')
     if soup.find('div', {'class': 'ak-404'}) == None:
-        print(url)
         monsterImageNumber = ''.join(re.findall('[0-9]',url))
         monsterImageLink = f'https://static.ankama.com/dofus/www/game/monsters/200/{monsterImageNumber}.png'
         name = soup.find('h1', {'class': 'ak-return-link'})
@@ -93,7 +102,7 @@ def get_monster_info(url):
         minHp, maxHp, minAp, maxAp, minMp, maxMp, minEarthRes,
         maxEarthRes, minWaterRes, maxWaterRes, minAirRes, maxAirRes, 
         minFireRes, maxFireRes, minNeutralRes, maxNeutralRes)
-        urllib.request.urlretrieve(monsterImageLink, f"C:/DofusImages/{name}.png")
+        save_monster_image(monsterImageLink,name)
         driver.quit()
         return monster
     else:
@@ -106,10 +115,8 @@ def get_monster_info(url):
 
 #move get_links_to_Monsters into a non-blocking thread. Do same for get_link_to_items
 get_link_to_monsters()
-while not url_queue.empty():
-    print(url_queue.get())
     
-with futures.ThreadPoolExecutor(max_workers=4) as executer:
+with futures.ThreadPoolExecutor(max_workers=1) as executer:
     
     while not url_queue.empty():
         url = url_queue.get()
