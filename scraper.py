@@ -73,7 +73,7 @@ def parse_level_ranges(levels):
     return (begin,end)
         
 def save_monster_image(imageData, imageName):
-    blob_client = blob_service_client.get_blob_client(container='dofus-pics', blob=f'{imageName}.png',ov)
+    blob_client = blob_service_client.get_blob_client(container='dofus-pics', blob=f'{imageName}.png')
     blob_client.upload_blob_from_url(imageData)
 
 def get_monster_info(url):
