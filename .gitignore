@@ -1,2 +1,6 @@
 scrapus/*
 .vscode/*
+
+__pycache__/
+*.pyc
+

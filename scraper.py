@@ -3,17 +3,16 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from queue import Queue
 import sys
-import urllib.request
 from monster import Monster
 from concurrent import futures
 import time
 import re
 import os
-from azure.storage.blob import BlobClient, BlobServiceClient
+from azure.storage.blob import BlobServiceClient
 
 def create_driver():
     if sys.platform == 'win32':
-        driver = webdriver.Chrome('.\webdriver\chromedriver.exe')
+        driver = webdriver.Chrome('.\webdriver\chromedriver.exe')  
     if sys.platform == 'linux' or sys.platform == 'linux2':
         driver = webdriver.Chrome('./webdriver/chromedriver')
     return driver
@@ -24,9 +23,9 @@ future_to_url = {}
 try:
     connect_str = os.getenv('AZ_Connection_String')
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-except: 
-    print('oops!No environment variable by that name :(')
-    print('Unable to create blob_service_client and container_client')
+except os.error: 
+    print('Error! Please check if the environment variable has been set.')
+
 
 def create_full_url(base, addition):
     return base + addition
@@ -56,10 +55,10 @@ def parse_ranges(soup, stat):
     range = div.findChild('span')
     rangeText = str.split(range.text, sep='to')
     if len(rangeText) > 1:
-        begin = ''.join(re.findall('[0-9]',rangeText[0]))
-        end = ''.join(re.findall('[0-9]',rangeText[1]))
+        begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
+        end = ''.join(re.findall('[-,0-9]',rangeText[1]))
     else:
-        begin = ''.join(re.findall('[0-9]',rangeText[0]))
+        begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
         end = begin
     return (begin,end)
 

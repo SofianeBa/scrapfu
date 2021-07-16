@@ -1,6 +1,3 @@
-
-
-
 class Monster():
     def __init__(self, monsterName, minLevel, maxLevel, monsterFamily, minHp, maxHp,minAp,maxAp,minMp, maxMp, minEarthRes, maxEarthRes, minWaterRes, maxWaterRes, minAirRes, maxAirRes, minFireRes, maxFireRes, minNeutralRes, maxNeutralRes ):
         self.monsterName = monsterName
