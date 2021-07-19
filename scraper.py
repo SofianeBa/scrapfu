@@ -1,14 +1,22 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from queue import Queue
 import sys
-from monster import Monster
+from models.monster import Monster
 from concurrent import futures
 import time
 import re
 import os
 from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceExistsError
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from helpers import db
+
+base_url = "https://www.dofus.com"
+url_queue = Queue(maxsize=0)
+future_to_url = {}
+dbsecret = db.get_conenction_string()
 
 def create_driver():
     if sys.platform == 'win32':
@@ -17,9 +25,10 @@ def create_driver():
         driver = webdriver.Chrome('./webdriver/chromedriver')
     return driver
 
-base_url = "https://www.dofus.com"
-url_queue = Queue(maxsize=0)
-future_to_url = {}
+def create_db_engine(dbstring):
+    engine = create_engine(dbstring, future=True)
+    return engine
+
 try:
     connect_str = os.getenv('AZ_Connection_String')
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
@@ -32,11 +41,10 @@ def create_full_url(base, addition):
 
 def get_link_to_monsters():
     #need to find a better way to determine the amount of pages in the table. 
-    pageNumber = 8
+    pageNumber = 0
     driver = create_driver()
     driver.get(base_url+'/en/mmorpg/encyclopedia/monsters')
-    while pageNumber < 10:
-        pageNumber += 1
+    while pageNumber < 92:
         soup = BeautifulSoup(driver.page_source, 'lxml')
         tbody = soup.find('tbody')
         rows = tbody.find_all('tr')
@@ -45,7 +53,9 @@ def get_link_to_monsters():
             for link in links: 
                 fullURL =  create_full_url(base_url, link['href'])
                 url_queue.put(fullURL)
+        pageNumber += 1
         driver.get(base_url+'/en/mmorpg/encyclopedia/monsters?page='+str(pageNumber))
+        
         time.sleep(5)
     driver.quit()
 
@@ -73,7 +83,10 @@ def parse_level_ranges(levels):
         
 def save_monster_image(imageData, imageName):
     blob_client = blob_service_client.get_blob_client(container='dofus-pics', blob=f'{imageName}.png')
-    blob_client.upload_blob_from_url(imageData)
+    try:
+        blob_client.upload_blob_from_url(imageData)
+    except ResourceExistsError:
+        print(f'{imageName}.png blob already exists')
 
 def get_monster_info(url):
     driver = create_driver()
@@ -97,10 +110,27 @@ def get_monster_info(url):
         minNeutralRes, maxNeutralRes = parse_ranges(soup, "Neutral:")
         name = str.strip(name.text)
         family = family.text
-        monster = Monster(name, minLevel, maxLevel, family, 
-        minHp, maxHp, minAp, maxAp, minMp, maxMp, minEarthRes,
-        maxEarthRes, minWaterRes, maxWaterRes, minAirRes, maxAirRes, 
-        minFireRes, maxFireRes, minNeutralRes, maxNeutralRes)
+        monster = Monster(
+            name=name,
+            minlevel=minLevel,
+            maxlevel=maxLevel,
+            minmp=minMp,
+            maxmp=maxMp,
+            minap=minAp,
+            maxap=maxAp,
+            family=family,
+            minhp=minHp,
+            maxhp=maxHp,
+            minearthres=minEarthRes,
+            maxearthres=maxEarthRes,
+            minwaterres=minWaterRes,
+            maxwaterres=maxWaterRes,
+            minfireres=minFireRes,
+            maxfireres=maxFireRes,
+            minairres=minAirRes,
+            maxairres=maxAirRes,
+            minneutralres=minNeutralRes,
+            maxneutralres=maxNeutralRes)
         save_monster_image(monsterImageLink,name)
         driver.quit()
         return monster
@@ -108,21 +138,18 @@ def get_monster_info(url):
         driver.quit()
         return None
     
-
-#def write_images_to_os
-#def write_monster_characterstics_to_db
-
 #move get_links_to_Monsters into a non-blocking thread. Do same for get_link_to_items
+engine = create_engine(dbsecret.value)
 get_link_to_monsters()
-    
-with futures.ThreadPoolExecutor(max_workers=1) as executer:
-    
+with futures.ThreadPoolExecutor(max_workers=3) as executer:
+    session = Session(engine)
     while not url_queue.empty():
         url = url_queue.get()
-        done, not_done = futures.wait(future_to_url,return_when=futures.FIRST_COMPLETED)
+        done, not_done = futures.wait(future_to_url,return_when=futures.ALL_COMPLETED)
         future_to_url[executer.submit(get_monster_info, url)] = url
         for future in done:
-           #put into database, write to file system
-           monster = future.result
-           if monster != None:
-               pass
+           #put into database
+            monster= future.result()
+            if monster != None:
+                session.add(monster)
+                session.commit()
