@@ -1,4 +1,5 @@
 import os
+from sqlalchemy import create_engine
 from azure.identity import VisualStudioCodeCredential
 from azure.keyvault.secrets import SecretClient
 
@@ -13,3 +14,7 @@ def get_conenction_string():
     client = SecretClient(vault_url=KVUri, credential=credentials)
     secret = client.get_secret('dbConnectionString')
     return secret
+
+def create_db_engine(dbstring):
+    engine = create_engine(dbstring, future=True)
+    return engine
