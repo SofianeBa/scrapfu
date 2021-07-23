@@ -2,15 +2,14 @@ import re
 from bs4 import BeautifulSoup
 from models.monster import Monster
 from azure.core.exceptions import ResourceExistsError
-
-
-
+import time
 
 class Monsterscraper:
-    def __init__(self, blob_service_client, driver, options):
+    def __init__(self, blob_service_client, driver, options,queue):
         self.blob_service_client = blob_service_client
         self.dr = driver
         self.options = options
+        self.url_queue = queue
 
     def parse_ranges(self, soup, stat):
         result = soup.find(text=re.compile(stat))
@@ -40,6 +39,26 @@ class Monsterscraper:
             blob_client.upload_blob_from_url(imageData)
         except ResourceExistsError:
             print(f'{imageName}.png blob already exists')
+
+    def get_link_to_monsters(self):
+    #need to find a better way to determine the amount of pages in the table. 
+        pageNumber = 91
+        driver = self.dr.create_driver(self.options)
+        driver.get(self.dr.create_full_url('/en/mmorpg/encyclopedia/monsters'))
+        while pageNumber < 93:
+            soup = BeautifulSoup(driver.page_source, 'lxml')
+            tbody = soup.find('tbody')
+            rows = tbody.find_all('tr')
+            for row in rows:
+                links = row.find_all('a')
+                for link in links: 
+                    fullURL =  self.dr.create_full_url(link['href'])
+                    self.url_queue.put(fullURL)
+            driver.get(self.dr.create_full_url('/en/mmorpg/encyclopedia/monsters?page='+str(pageNumber)))
+            pageNumber += 1
+            time.sleep(1)
+        driver.quit()
+        return "Done scraping monster urls"
 
     def get_monster_info(self, url):
         driver = self.dr.create_driver(self.options)
