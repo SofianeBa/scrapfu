@@ -61,6 +61,7 @@ class Monsterscraper:
         return "Done scraping monster urls"
 
     def get_monster_info(self, url):
+        time.sleep(.5)
         driver = self.dr.create_driver(self.options)
         driver.get(url)
         soup = BeautifulSoup(driver.page_source, 'lxml')
