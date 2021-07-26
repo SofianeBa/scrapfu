@@ -1,6 +1,8 @@
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy import Column, String
 from .base import Base
+from .associationtables import monster_resource_table
 
 class Monster(Base):
     __tablename__='monster'
@@ -25,4 +27,5 @@ class Monster(Base):
     maxairres = Column(Integer,nullable=False)
     minneutralres = Column(Integer,nullable=False)
     maxneutralres = Column(Integer,nullable=False)
+    resources = relationship("Resource", secondary=monster_resource_table, back_populates='monsters')
     

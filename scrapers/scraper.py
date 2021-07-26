@@ -29,10 +29,9 @@ class Scraper():
                 tbody = soup.find('tbody')
                 rows = tbody.find_all('tr')
                 for row in rows:
-                    links = row.find_all('a')
-                    for link in links: 
-                        fullURL =  {self.dr.create_full_url(link['href']): tag}
-                        self.url_queue.put(fullURL)
+                    link = row.find('a')
+                    fullURL =  {self.dr.create_full_url(link['href']): tag}
+                    self.url_queue.put(fullURL)
                 pageNumber += 1
                 time.sleep(1)
             driver.quit()

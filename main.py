@@ -22,11 +22,13 @@ def write_to_log(msg):
     with open('log.txt', 'a+') as file:
         file.write(msg)
 
-def start_scraping(monster_url, resource_url):
+def start_scraping(monster_url = None, resource_url = None):
     with futures.ThreadPoolExecutor(max_workers=3) as executer:
         session = Session(engine)
-        future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster'): 'URL_FUTURE'}
-        future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource'): 'URL_FUTURE'}
+        if monster_url != None:
+            future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster'): 'URL_FUTURE'}
+        if resource_url !=None:
+            future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource'): 'URL_FUTURE'}
         while future_to_url:
             done, not_done = futures.wait(future_to_url,return_when=futures.FIRST_COMPLETED)
             while not url_queue.empty():
@@ -47,12 +49,13 @@ def start_scraping(monster_url, resource_url):
                 if data != None and future_to_url[future] != 'URL_FUTURE':
                     #put into database
                     try:
-                        print('eye')
-                        #session.add(data)
-                        #session.commit()
+                        session.add(data)
+                        session.commit()
                     except Exception as e:
                         print(e)
+                        write_to_log(f'failed to commit data: rolling back session for url: {future_to_url[future]}\n')
+                        session.rollback()
                     write_to_log(f'scraped: {future_to_url[future]}\n')
                 del future_to_url[future]
 
-start_scraping('/en/mmorpg/encyclopedia/monsters?page=','/en/mmorpg/encyclopedia/resources?page=')
+start_scraping( resource_url='/en/mmorpg/encyclopedia/resources?page=')
