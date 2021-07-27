@@ -1,6 +1,7 @@
 from azure.core.exceptions import ResourceExistsError
 from bs4 import BeautifulSoup
 import time
+import re
 
 class Scraper():
     def __init__(self,blob_service_client, driver, options, queue):
@@ -18,6 +19,21 @@ class Scraper():
             except:
                 print('something else went wrong!')
 
+    def get_image_link(self,soup):
+        resourceImage = soup.find('div', {'class':'ak-encyclo-detail-illu'})
+        resourceImage = resourceImage.findChild('img')
+        resourceImageLink = resourceImage['src']
+        return resourceImageLink
+
+    def get_name(self,soup):
+        name = soup.find('h1', {'class': 'ak-return-link'})
+        name = str.strip(name.text)
+        return name
+
+    def get_id(self, url):
+        monsterImageNumber = ''.join(re.findall('[0-9]',url))
+        monsterImageNumber = int(monsterImageNumber)
+        return monsterImageNumber 
 
     def get_link(self, url, tag):
         #need to find a better way to determine the amount of pages in the table. 

@@ -1,6 +1,4 @@
 from sqlalchemy.orm import relationship
-from models.monster import Monster
-from sqlalchemy import Table
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy.sql.schema import Column, ForeignKey 
 from .base import Base

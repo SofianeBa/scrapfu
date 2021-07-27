@@ -39,6 +39,11 @@ class Monsterscraper(Scraper):
             end = begin
         return (begin,end)
 
+    def get_family(self,soup):
+        family = soup.find('div', {'class': 'col-xs-8 ak-encyclo-detail-type'})
+        family = family.findChild('span', recursive=False)
+        return family.text
+
     def get_monster_info(self, url):
         time.sleep(5)
         driver = self.dr.create_driver(self.options)
@@ -46,11 +51,11 @@ class Monsterscraper(Scraper):
         soup = BeautifulSoup(driver.page_source, 'lxml')
         if soup.find('div', {'class': 'ak-404'}) == None:
             try:
-                monsterImageNumber = ''.join(re.findall('[0-9]',url))
-                monsterImageLink = f'https://static.ankama.com/dofus/www/game/monsters/200/{monsterImageNumber}.png'
-                name = soup.find('h1', {'class': 'ak-return-link'})
-                family = soup.find('div', {'class': 'col-xs-8 ak-encyclo-detail-type'})
-                family = family.findChild('span', recursive=False)
+                monsterImageLink = self.get_image_link(soup)
+                name = self.get_name(soup)
+                id = self.get_id(url)
+                self.save_image(monsterImageLink,name)
+                family = self.get_family(soup)
                 levelRange = soup.find('div', {'class': 'col-xs-4 text-right ak-encyclo-detail-level'},text=True)
                 minLevel, maxLevel = self.parse_level_ranges(str.split(levelRange.text, sep="to"))
                 minHp, maxHp = self.parse_ranges(soup, 'HP:')
@@ -61,9 +66,8 @@ class Monsterscraper(Scraper):
                 minFireRes, maxFireRes = self.parse_ranges(soup, "Fire:")
                 minWaterRes, maxWaterRes = self.parse_ranges(soup, "Water:")
                 minNeutralRes, maxNeutralRes = self.parse_ranges(soup, "Neutral:")
-                name = str.strip(name.text)
-                family = family.text
                 monster = Monster(
+                    id = id,
                     name=name,
                     minlevel=minLevel,
                     maxlevel=maxLevel,
@@ -84,7 +88,6 @@ class Monsterscraper(Scraper):
                     maxairres=maxAirRes,
                     minneutralres=minNeutralRes,
                     maxneutralres=maxNeutralRes)
-                self.save_image(monsterImageLink,name)
                 driver.quit()
                 return monster
             except:

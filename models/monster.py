@@ -1,11 +1,12 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy import Column, String
+from .mrassociation import Mrassociation
 from .base import Base
 
 class Monster(Base):
     __tablename__='monster'
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     name = Column(String(128),nullable=False)
     minlevel = Column(Integer,nullable=False)
     maxlevel = Column(Integer,nullable=False)
@@ -26,4 +27,4 @@ class Monster(Base):
     maxairres = Column(Integer,nullable=False)
     minneutralres = Column(Integer,nullable=False)
     maxneutralres = Column(Integer,nullable=False)
-    resources = relationship("Association", back_populates="monster")    
+    resources = relationship("Mrassociation", back_populates="monster")    
