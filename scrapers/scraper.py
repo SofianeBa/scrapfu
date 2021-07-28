@@ -31,9 +31,10 @@ class Scraper():
         return name
 
     def get_id(self, url):
-        monsterImageNumber = ''.join(re.findall('[0-9]',url))
-        monsterImageNumber = int(monsterImageNumber)
-        return monsterImageNumber 
+        url = str.split(url,'-')[0]
+        object_id = ''.join(re.findall('[0-9]',url))
+        object_id = int(object_id)
+        return object_id 
 
     def get_link(self, url, tag,pages):
         #need to find a better way to determine the amount of pages in the table. 

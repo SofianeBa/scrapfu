@@ -38,10 +38,11 @@ class Resourcescraper(Scraper):
                 columns = content.findAll('div',{'class':'ak-column ak-container col-xs-12 col-md-6'})
                 for column in columns:
                     link_raw = column.find('a')
+                    link_raw = str.split(link_raw['href'],'-')[0]
                     drop_rate_raw = column.find('div',{'class':'ak-aside'})
                     drop_rate_raw = drop_rate_raw.text
                     drop_rate = ''.join(re.findall('[.,0-9]',drop_rate_raw))
-                    monster_pk = ''.join(re.findall('[0-9]', link_raw['href']))
+                    monster_pk = ''.join(re.findall('[0-9]', link_raw))
                     pairing = {'id': monster_pk, 'drop_rate': drop_rate}
                     monster_key_drop_pairings.append(pairing)
         return monster_key_drop_pairings
