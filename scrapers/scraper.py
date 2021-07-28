@@ -35,11 +35,11 @@ class Scraper():
         monsterImageNumber = int(monsterImageNumber)
         return monsterImageNumber 
 
-    def get_link(self, url, tag):
+    def get_link(self, url, tag,pages):
         #need to find a better way to determine the amount of pages in the table. 
-            pageNumber = 92
+            pageNumber = 1
             driver = self.dr.create_driver(self.options)
-            while pageNumber < 93:
+            while pageNumber < pages + 1:
                 driver.get(self.dr.create_full_url(url+str(pageNumber)))
                 soup = BeautifulSoup(driver.page_source, 'lxml')
                 tbody = soup.find('tbody')

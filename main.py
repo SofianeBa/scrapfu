@@ -17,6 +17,8 @@ engine = db.create_engine(dbsecret.value)
 blob_service_client = BlobServiceClient.from_connection_string(config.connect_str)
 monsterscraper = Monsterscraper(blob_service_client, dr, options, url_queue)
 resourcescraper = Resourcescraper(blob_service_client, dr, options, url_queue)
+session = Session(engine)
+
 
 def write_to_log(msg):
     with open('log.txt', 'a+') as file:
@@ -24,11 +26,10 @@ def write_to_log(msg):
 
 def start_scraping(monster_url = None, resource_url = None):
     with futures.ThreadPoolExecutor(max_workers=3) as executer:
-        session = Session(engine)
         if monster_url != None:
-            future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster'): 'URL_FUTURE'}
+            future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster', 92): 'URL_FUTURE'}
         if resource_url !=None:
-            future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource'): 'URL_FUTURE'}
+            future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource', 122): 'URL_FUTURE'}
         while future_to_url:
             done, not_done = futures.wait(future_to_url,return_when=futures.FIRST_COMPLETED)
             while not url_queue.empty():
@@ -58,4 +59,5 @@ def start_scraping(monster_url = None, resource_url = None):
                     write_to_log(f'scraped: {future_to_url[future]}\n')
                 del future_to_url[future]
 
-start_scraping( resource_url='/en/mmorpg/encyclopedia/resources?page=')
+start_scraping(monster_url='/en/mmorpg/encyclopedia/monsters?page=')
+start_scraping(resource_url='/en/mmorpg/encyclopedia/resources?page=')

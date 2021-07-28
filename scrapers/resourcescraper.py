@@ -1,3 +1,5 @@
+from helpers.db import create_session
+from models.mrassociation import Mrassociation
 from .scraper import Scraper
 import time
 from models.resource import Resource
@@ -26,6 +28,25 @@ class Resourcescraper(Scraper):
         description = str.strip(description.text)
         return description
 
+    def get_dropped_by(self, soup):
+        monster_key_drop_pairings = []
+        titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
+        for title in titles:
+            text = str.strip(title.text)
+            if text == 'Dropped by':
+                content = title.find_next_sibling('div')
+                columns = content.findAll('div',{'class':'ak-column ak-container col-xs-12 col-md-6'})
+                for column in columns:
+                    link_raw = column.find('a')
+                    drop_rate_raw = column.find('div',{'class':'ak-aside'})
+                    drop_rate_raw = drop_rate_raw.text
+                    drop_rate = ''.join(re.findall('[.,0-9]',drop_rate_raw))
+                    monster_pk = ''.join(re.findall('[0-9]', link_raw['href']))
+                    pairing = {'id': monster_pk, 'drop_rate': drop_rate}
+                    monster_key_drop_pairings.append(pairing)
+        return monster_key_drop_pairings
+
+
     def get_resource_info(self, url):
         time.sleep(5)
         driver = self.dr.create_driver(self.options)
@@ -39,7 +60,7 @@ class Resourcescraper(Scraper):
                 type = self.get_type(soup)
                 level = self.get_level(soup)
                 description = self.get_description(soup)
-                print(f'{id} {name} {type} {level}')
+                monster_pks = self.get_dropped_by(soup)
                 self.save_image(imageName=name, imagelink=resourceImageLink)
                 resource = Resource(
                     id = id, 
@@ -48,7 +69,13 @@ class Resourcescraper(Scraper):
                     level = level, 
                     description = description
                 )
+                for pairing in monster_pks:
+                    monster_key = pairing['id']
+                    drop_rate = pairing['drop_rate']
+                    a = Mrassociation(drop_rate=drop_rate, monster_id=monster_key)
+                    resource.monsters.append(a)
                 driver.quit()
+                return resource
                 #need to create resource and assign values. Work on relationship with monsters.
             except Exception as e:
                 print(e)
@@ -57,4 +84,3 @@ class Resourcescraper(Scraper):
         else:
             driver.quit()
             return None
-            

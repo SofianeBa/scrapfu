@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from azure.identity import VisualStudioCodeCredential
 from azure.keyvault.secrets import SecretClient
+from sqlalchemy.orm import Session
 from urllib3.poolmanager import SSL_KEYWORDS
 import settings as config
 
@@ -15,3 +16,9 @@ def get_conenction_string():
 def create_db_engine(dbstring):
     engine = create_engine(dbstring, future=True)
     return engine
+
+def create_session():
+    dbsecret = get_conenction_string()
+    engine = create_db_engine(dbsecret.value)
+    session = Session(engine)
+    return session
