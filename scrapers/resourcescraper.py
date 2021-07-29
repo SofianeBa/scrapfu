@@ -1,5 +1,4 @@
-from helpers.db import create_session
-from models.mrassociation import Mrassociation
+from models.monsterresource import MonsterResource
 from .scraper import Scraper
 import time
 from models.resource import Resource
@@ -73,7 +72,7 @@ class Resourcescraper(Scraper):
                 for pairing in monster_pks:
                     monster_key = pairing['id']
                     drop_rate = pairing['drop_rate']
-                    a = Mrassociation(drop_rate=drop_rate, monster_id=monster_key)
+                    a = MonsterResource(drop_rate=drop_rate, monster_id=monster_key)
                     resource.monsters.append(a)
                 driver.quit()
                 return resource

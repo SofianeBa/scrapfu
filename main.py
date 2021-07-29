@@ -59,5 +59,5 @@ def start_scraping(monster_url = None, resource_url = None):
                     write_to_log(f'scraped: {future_to_url[future]}\n')
                 del future_to_url[future]
 
-start_scraping(monster_url='/en/mmorpg/encyclopedia/monsters?page=')
+#start_scraping(monster_url='/en/mmorpg/encyclopedia/monsters?page=')
 start_scraping(resource_url='/en/mmorpg/encyclopedia/resources?page=')

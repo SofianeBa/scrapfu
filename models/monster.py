@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy import Column, String
-from .mrassociation import Mrassociation
+from .monsterresource import MonsterResource
 from .base import Base
 
 class Monster(Base):
@@ -27,4 +27,4 @@ class Monster(Base):
     maxairres = Column(Integer,nullable=False)
     minneutralres = Column(Integer,nullable=False)
     maxneutralres = Column(Integer,nullable=False)
-    resources = relationship("Mrassociation", back_populates="monster")    
+    resources = relationship("MonsterResource", back_populates="monster")    

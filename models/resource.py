@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import Integer, Text, String
-from .mrassociation import Mrassociation
+from .monsterresource import MonsterResource
 from .base import Base
 
 class Resource(Base):
@@ -11,4 +11,4 @@ class Resource(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     level = Column(Integer, nullable=False)
-    monsters = relationship("Mrassociation", back_populates="resource")
+    monsters = relationship("MonsterResource", back_populates="resource")
