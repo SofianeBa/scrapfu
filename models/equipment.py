@@ -1,4 +1,3 @@
-from sqlalchemy.sql.traversals import CACHE_IN_PLACE
 from models.base import Base
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
@@ -10,6 +9,7 @@ class Equipment(Base):
     type = Column(String, nullable = False)
     level = Column(Integer, nullable = False)
     name = Column(String, nullable = False)
+    description = Column(String, nullable = True)
     ap = Column(Integer, nullable = True)
     ap_parry = Column(Integer, nullable = True)
     ap_reduction = Column(Integer, nullable = True)
@@ -50,7 +50,6 @@ class Equipment(Base):
     percent_ranged_res = Column(Integer, nullable = True)
     percent_spell_damage = Column(Integer, nullable = True)
     percent_weapon_damage = Column(Integer, nullable = True)
-    description = Column(String, nullable = True)
     summons = Column(Integer, nullable = True)
     trap_damage = Column(Integer, nullable = True)
     range = Column(Integer, nullablej = True)
