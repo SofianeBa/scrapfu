@@ -3,13 +3,21 @@ from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 from models.base import Base
 
+# Weapon model class - gathers id, type,level, etc. Gathers all the basic stats for each weapon. Does not currently gather incarnations and other special effects.
 class Weapon(Base):
     __tablename__ = 'weapon'
+    #identification
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=False)
     type = Column(String, nullable = False)
     level = Column(Integer, nullable = False)
     name = Column(String, nullable = False)
     description = Column(String, nullable = True)
+    #characteristics
+    ap_cost = Column(Integer, nullable=False)
+    min_effective_range = Column(Integer, nullable=False)
+    max_effective_range = Column(Integer, nullable = False)
+    crit_hit_chance = Column(Integer, nullable = False)
+    #Core Effects
     min_percent_air_res= Column(Integer, nullable = True)
     max_percent_air_res= Column(Integer, nullable = True)
     min_percent_earth_res= Column(Integer, nullable = True)
@@ -114,4 +122,5 @@ class Weapon(Base):
     max_trap_damage= Column(Integer, nullable = True)
     min_steals_kamas= Column(Integer, nullable = True)
     max_steals_kamas= Column(Integer, nullable = True)
+    #Relationships
     recipe = relationship('Recipe', back_populates='weapon', uselist=False, nullable= False)

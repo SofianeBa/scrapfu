@@ -5,6 +5,7 @@ from .monsterresource import MonsterResource
 from .ingredient import Ingredient
 from .base import Base
 
+# Resource model class - Gathers id,name,type, and description. Associates resources to monsters that drop it and recipes that use it
 class Resource(Base):
     __tablename__='resource'
     id = Column(Integer, primary_key=True, autoincrement=False)
