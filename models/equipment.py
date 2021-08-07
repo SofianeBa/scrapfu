@@ -97,7 +97,7 @@ class Equipment(Base):
     max_summons = Column(Integer, nullable = True)
     min_trap_damage = Column(Integer, nullable = True)
     max_trap_damage = Column(Integer, nullable = True)
-    min_range = Column(Integer, nullablej = True)
-    max_range = Column(Integer, nullablej = True)
+    min_range = Column(Integer, nullable = True)
+    max_range = Column(Integer, nullable = True)
     #relationships
-    recipe = relationship('Recipe', back_populates='equipment', uselist=False, nullable= False)
+    recipe = relationship('Recipe', back_populates='equipment', uselist=False)

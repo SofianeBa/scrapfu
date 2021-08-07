@@ -123,4 +123,4 @@ class Weapon(Base):
     min_steals_kamas= Column(Integer, nullable = True)
     max_steals_kamas= Column(Integer, nullable = True)
     #Relationships
-    recipe = relationship('Recipe', back_populates='weapon', uselist=False, nullable= False)
+    recipe = relationship('Recipe', back_populates='weapon', uselist=False)

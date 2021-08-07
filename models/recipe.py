@@ -13,9 +13,9 @@ class Recipe(Base):
     #identification
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     level = Column(Integer, nullable=False)
-    profession = Column(String, ForeignKey('profession.id'), nullable = False)
-    equipment_id = Column(String, ForeignKey('equipment.id'), nullable=True)
-    weapon_id = Column(String, ForeignKey('weapon.id'), nullable = True)
+    profession = Column(Integer, ForeignKey('profession.id'), nullable = False)
+    equipment_id = Column(Integer, ForeignKey('equipment.id'), nullable=True)
+    weapon_id = Column(Integer, ForeignKey('weapon.id'), nullable = True)
     #relationships - can belong to one equipment or weapon. Many to many relationship with resources (ingredients)
     ingredients = relationship('Ingredient', back_populates='recipe')
     equipment = relationship('Equipment', back_populates='recipe')

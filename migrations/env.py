@@ -17,7 +17,7 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from models import monster, resource, mrassociation
+from models import monster, resource, monsterresource, equipment, weapon, ingredient, recipe, profession
 target_metadata = base.Base.metadata
 
 # other values from the config, defined by the needs of env.py,

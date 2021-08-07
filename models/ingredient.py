@@ -10,5 +10,5 @@ class Ingredient(Base):
     recipe_id = Column(ForeignKey('recipe.id'), primary_key=True)
     resource_id = Column(ForeignKey('resource.id'), primary_key=True) 
     quantity = Column(Integer, nullable=False)
-    recipe = relationship('Recipe',back_populates='resources')
+    recipe = relationship('Recipe',back_populates='ingredients')
     resource = relationship('Resource',back_populates='recipes')
