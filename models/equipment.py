@@ -1,7 +1,7 @@
 from models.base import Base
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
-from sqlalchemy.types import String, Integer
+from sqlalchemy.types import String, Integer, Text
 
 #Equiment model class - gathers identification, effects, and associates to crafting recipe
 class Equipment(Base):
@@ -11,7 +11,7 @@ class Equipment(Base):
     type = Column(String, nullable = False)
     level = Column(Integer, nullable = False)
     name = Column(String, nullable = False)
-    description = Column(String, nullable = True)
+    description = Column(Text, nullable = True)
     #Core Effects
     min_ap = Column(Integer, nullable = True)
     max_ap = Column(Integer, nullable = True)

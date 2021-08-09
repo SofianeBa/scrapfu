@@ -1,4 +1,4 @@
-from sqlalchemy.types import Integer, String
+from sqlalchemy.types import Integer, String, Text
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 from models.base import Base
@@ -11,7 +11,7 @@ class Weapon(Base):
     type = Column(String, nullable = False)
     level = Column(Integer, nullable = False)
     name = Column(String, nullable = False)
-    description = Column(String, nullable = True)
+    description = Column(Text, nullable = True)
     #characteristics
     ap_cost = Column(Integer, nullable=False)
     min_effective_range = Column(Integer, nullable=False)
