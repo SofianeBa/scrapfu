@@ -13,6 +13,8 @@ class Equipment(Base):
     name = Column(String, nullable = False)
     description = Column(Text, nullable = True)
     #Core Effects
+    min_vitality = Column(Integer, nullable=True)
+    max_vitality = Column(Integer, nullable = True)
     min_ap = Column(Integer, nullable = True)
     max_ap = Column(Integer, nullable = True)
     min_ap_parry = Column(Integer, nullable = True)

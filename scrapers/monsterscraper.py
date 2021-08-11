@@ -16,16 +16,19 @@ class Monsterscraper(Scraper):
         if len(rangeText) > 1:
             begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
             end = ''.join(re.findall('[-,0-9]',rangeText[1]))
-            begin_is_int = isinstance(begin, int )
-            end_is_int = isinstance(end, int)
-            if begin_is_int == False:
+            try:
+                begin = int(str.strip(begin))
+            except:
                 begin = end
-            elif end_is_int == False:
-                end = begin 
+            try:
+                end = int(str.strip(end))
+            except:
+                end = begin
         else:
             begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
-            begin_is_int = isinstance(begin, int)
-            if begin_is_int == False:
+            try:
+                begin = int(str.strip(begin))
+            except:
                 begin = 1
             end = begin
         return (begin,end)
