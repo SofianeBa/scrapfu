@@ -2,9 +2,8 @@ import os
 from sqlalchemy import create_engine
 from azure.identity import VisualStudioCodeCredential
 from azure.keyvault.secrets import SecretClient
-from sqlalchemy.orm import Session
-from urllib3.poolmanager import SSL_KEYWORDS
 import settings as config
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 def get_conenction_string():
     KVUri = f"https://{config.kvName}.vault.azure.net"
@@ -20,5 +19,6 @@ def create_db_engine(dbstring):
 def create_session():
     dbsecret = get_conenction_string()
     engine = create_db_engine(dbsecret.value)
-    session = Session(engine)
-    return session
+    session_factory = sessionmaker(bind=engine)
+    Session = scoped_session(session_factory)
+    return Session

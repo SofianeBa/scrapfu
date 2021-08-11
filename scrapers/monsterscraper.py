@@ -2,12 +2,14 @@ import re
 from bs4 import BeautifulSoup
 from .scraper import Scraper
 from models.monster import Monster
+from helpers import db
 import time
 
 class Monsterscraper(Scraper):
     def __init__(self,blob_service_client, driver, options, queue):
         super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
-
+        self.Session = db.create_session()
+        self.session = self.Session()
     def parse_ranges(self, soup, stat):
         result = soup.find(text=re.compile(stat))
         div = result.parent
@@ -92,7 +94,33 @@ class Monsterscraper(Scraper):
                     minneutralres=minNeutralRes,
                     maxneutralres=maxNeutralRes)
                 driver.quit()
-                return monster
+                old_monster = self.session.get(Monster, monster.id)
+                if old_monster:
+                    old_monster.id = id
+                    old_monster.name=name
+                    old_monster.minlevel=minLevel
+                    old_monster.maxlevel=maxLevel
+                    old_monster.minmp=minMp
+                    old_monster.maxmp=maxMp
+                    old_monster.minap=minAp
+                    old_monster.maxap=maxAp
+                    old_monster.family=family
+                    old_monster.minhp=minHp
+                    old_monster.maxhp=maxHp
+                    old_monster.minearthres=minEarthRes
+                    old_monster.maxearthres=maxEarthRes
+                    old_monster.minwaterres=minWaterRes
+                    old_monster.maxwaterres=maxWaterRes
+                    old_monster.minfireres=minFireRes
+                    old_monster.maxfireres=maxFireRes
+                    old_monster.minairres=minAirRes
+                    old_monster.maxairres=maxAirRes
+                    old_monster.minneutralres=minNeutralRes
+                    old_monster.maxneutralres=maxNeutralRes
+                    self.session.commit()
+                    return None
+                else:
+                    return monster
             except:
                 print('something went wrong!')
                 driver.quit()

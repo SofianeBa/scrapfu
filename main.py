@@ -2,7 +2,6 @@ from queue import Queue
 from selenium.webdriver.chrome.options import Options
 from concurrent import futures
 from azure.storage.blob import BlobServiceClient
-from sqlalchemy.orm import Session
 from scrapers.monsterscraper import Monsterscraper
 from scrapers.resourcescraper import Resourcescraper
 from scrapers.professionscraper import Professionscraper
@@ -11,17 +10,16 @@ from helpers import db
 from helpers import driver as dr
 import settings as config
 
+Session = db.create_session()
+session = Session()
 url_queue = Queue(maxsize=0)
 options = Options()
 options.add_experimental_option('excludeSwitches', ['enable-logging'])
-dbsecret = db.get_conenction_string()
-engine = db.create_engine(dbsecret.value)
 blob_service_client = BlobServiceClient.from_connection_string(config.connect_str)
 monsterscraper = Monsterscraper(blob_service_client, dr, options, url_queue)
 resourcescraper = Resourcescraper(blob_service_client, dr, options, url_queue)
 professionscraper = Professionscraper(blob_service_client, dr, options, url_queue)
 equipmentscraper = Equipmentscraper(blob_service_client, dr, options, url_queue)
-session = Session(engine)
 
 
 def write_to_log(msg):
