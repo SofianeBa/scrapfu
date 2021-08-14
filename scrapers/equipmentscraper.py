@@ -242,15 +242,21 @@ class Equipmentscraper(Scraper):
         driver.get(url)
         soup = BeautifulSoup(driver.page_source, 'lxml')
         if soup.find('div', {'class': 'ak-404'}) == None:
-            self.equipment.id = self.get_id(url)
-            self.equipment.type = self.get_type(soup)
-            self.equipment.level = self.get_level(soup)
-            self.equipment.name =  self.get_name(soup)
-            self.equipment.description = self.get_description(soup)
-            equipment_image_link = self.get_image_link(soup)
-            effect_fields = self.find_effect_fields(soup)
-            self.scrape_effect_fields(effect_fields)
-            self.get_recipe(soup)
-            self.save_image(equipment_image_link, self.equipment.name)
+            try:
+                self.equipment.id = self.get_id(url)
+                self.equipment.type = self.get_type(soup)
+                self.equipment.level = self.get_level(soup)
+                self.equipment.name =  self.get_name(soup)
+                self.equipment.description = self.get_description(soup)
+                equipment_image_link = self.get_image_link(soup)
+                effect_fields = self.find_effect_fields(soup)
+                self.scrape_effect_fields(effect_fields)
+                self.get_recipe(soup)
+                self.save_image(equipment_image_link, self.equipment.name)
+                driver.quit()
+                return self.equipment
+            except Exception as e: 
+                driver.quit()
+                print(e)
+        else:
             driver.quit()
-            return self.equipment
