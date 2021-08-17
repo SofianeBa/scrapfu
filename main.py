@@ -73,4 +73,3 @@ def start_scraping(monster_url = None, resource_url = None, profession_url = Non
 #start_scraping(resource_url='/en/mmorpg/encyclopedia/resources?page=')
 #start_scraping(profession_url='/en/mmorpg/encyclopedia/professions?page=')
 #start_scraping(equipment_url='/en/mmorpg/encyclopedia/equipment?page=')
-
