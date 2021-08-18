@@ -78,7 +78,6 @@ class Resourcescraper(Scraper):
                     resource.monsters.append(a)
                 driver.quit()
                 return resource
-                #need to create resource and assign values. Work on relationship with monsters.
             except Exception as e:
                 print(e)
                 driver.quit()
