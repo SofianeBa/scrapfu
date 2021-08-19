@@ -6,6 +6,7 @@ from scrapers.monsterscraper import Monsterscraper
 from scrapers.resourcescraper import Resourcescraper
 from scrapers.professionscraper import Professionscraper
 from scrapers.equipmentscraper import Equipmentscraper
+from scrapers.weaponscraper import Weaponscraper
 from helpers import db
 from helpers import driver as dr
 import settings as config
@@ -20,22 +21,25 @@ monsterscraper = Monsterscraper(blob_service_client, dr, options, url_queue)
 resourcescraper = Resourcescraper(blob_service_client, dr, options, url_queue)
 professionscraper = Professionscraper(blob_service_client, dr, options, url_queue)
 equipmentscraper = Equipmentscraper(blob_service_client, dr, options, url_queue)
+weaponscraper = Weaponscraper(blob_service_client, dr, options, url_queue)
 
 
 def write_to_log(msg):
     with open('log.txt', 'a+') as file:
         file.write(msg)
 
-def start_scraping(monster_url = None, resource_url = None, profession_url = None, equipment_url = None):
+def start_scraping(monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None):
     with futures.ThreadPoolExecutor(max_workers=3) as executer:
         if monster_url != None:
             future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster', 92): 'URL_FUTURE'}
         if resource_url !=None:
-            future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource', 122): 'URL_FUTURE'}
+            future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource', 101): 'URL_FUTURE'}
         if profession_url !=None:
             future_to_url = {executer.submit(professionscraper.get_link, profession_url, 'Profession', 2): 'URL_FUTURE'}
         if equipment_url !=None:
             future_to_url = {executer.submit(equipmentscraper.get_link, equipment_url, 'Equipment', 34): 'URL_FUTURE'}
+        if weapon_url !=None:
+            future_to_url = {executer.submit(weaponscraper.get_link, weapon_url, 'Weapon', 101): 'URL_FUTURE'}
         while future_to_url:
             done, not_done = futures.wait(future_to_url,return_when=futures.FIRST_COMPLETED)
             while not url_queue.empty():
@@ -51,6 +55,8 @@ def start_scraping(monster_url = None, resource_url = None, profession_url = Non
                     future_to_url[executer.submit(professionscraper.get_profession_info, url)] = url
                 elif tag == "Equipment":
                     future_to_url[executer.submit(equipmentscraper.get_equipment_info, url)] = url
+                elif tag == "Weapon":
+                    future_to_url[executer.submit(weaponscraper.get_weapon_info, url)] = url
             for future in done:
                 data = future.result()
                 if future_to_url[future] == 'URL_FUTURE':
@@ -73,3 +79,4 @@ def start_scraping(monster_url = None, resource_url = None, profession_url = Non
 #start_scraping(resource_url='/en/mmorpg/encyclopedia/resources?page=')
 #start_scraping(profession_url='/en/mmorpg/encyclopedia/professions?page=')
 #start_scraping(equipment_url='/en/mmorpg/encyclopedia/equipment?page=')
+#start_scraping(weapon_url='/en/mmorpg/encyclopedia/weapons?page=')

@@ -1,4 +1,5 @@
-from sqlalchemy.types import Integer, String, Text
+from sqlalchemy.sql.expression import null
+from sqlalchemy.types import Integer, String, Text, Boolean
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 from models.base import Base
@@ -122,5 +123,30 @@ class Weapon(Base):
     max_trap_damage= Column(Integer, nullable = True)
     min_steals_kamas= Column(Integer, nullable = True)
     max_steals_kamas= Column(Integer, nullable = True)
+    min_attack_neutral_damage=Column(Integer, nullable = True)
+    max_attack_neutral_damage=Column(Integer, nullable = True)
+    min_attack_fire_damage=Column(Integer, nullable = True)
+    max_attack_fire_damage=Column(Integer, nullable = True)
+    min_attack_water_damage=Column(Integer, nullable = True)
+    max_attack_water_damage=Column(Integer, nullable = True)
+    min_attack_earth_damage=Column(Integer, nullable = True)
+    max_attack_earth_damage=Column(Integer, nullable = True)
+    min_attack_air_damage=Column(Integer, nullable = True)
+    max_attack_air_damage=Column(Integer, nullable = True)
+    min_attack_neutral_steal=Column(Integer, nullable = True)
+    max_attack_neutral_steal=Column(Integer, nullable = True)
+    min_attack_fire_steal=Column(Integer, nullable = True)
+    max_attack_fire_steal=Column(Integer, nullable = True)
+    min_attack_water_steal=Column(Integer, nullable = True)
+    max_attack_water_steal=Column(Integer, nullable = True)
+    min_attack_earth_steal=Column(Integer, nullable = True)
+    max_attack_earth_steal=Column(Integer, nullable = True)
+    min_attack_air_steal=Column(Integer, nullable = True)
+    max_attack_air_steal=Column(Integer, nullable = True)
+    min_attack_hp_steal=Column(Integer, nullable=True)
+    max_attack_hp_steal=Column(Integer, nullable=True)
+    min_summons = Column(Integer, nullable = True)
+    max_summons = Column(Integer, nullable = True)
+    is_hunting_weapon = Column(Boolean, nullable = True)
     #Relationships
     recipe = relationship('Recipe', back_populates='weapon', uselist=False)
