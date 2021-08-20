@@ -98,9 +98,16 @@ def scrape_professions():
 
 def scrape_equipment():
     start_scraping(equipment_url='/en/mmorpg/encyclopedia/equipment?page=')
+    for url, reason in resourcescraper.failed_urls.items():
+        write_to_log('equipment_log.txt', f'{url}: {reason}\n')
+    for i in range(0,5):
+        write_to_log('equipment_log.txt', '\n')
+    for url, reason in resourcescraper.skipped_urls.items():
+        write_to_log('equipment_log.txt', f'{url}: {reason}\n')
 
 def scrape_weapons():
     start_scraping(weapon_url='/en/mmorpg/encyclopedia/weapons?page=')
 
 #scrape_monsters()
-scrape_resources()
+#scrape_resources()
+scrape_equipment()
