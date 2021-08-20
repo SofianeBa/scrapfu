@@ -1,3 +1,4 @@
+from models.ingredient import Ingredient
 from models.base import Base
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
@@ -103,3 +104,4 @@ class Equipment(Base):
     max_range = Column(Integer, nullable = True)
     #relationships
     recipe = relationship('Recipe', back_populates='equipment', uselist=False)
+    ingredient = relationship('Ingredient', back_populates='equipment')

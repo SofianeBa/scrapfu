@@ -104,9 +104,13 @@ class Equipmentscraper(Scraper):
             for ingredient_row in ingredient_list:
                 amount_tag = ingredient_row.find('div', {'class':'ak-front'})
                 amount = ''.join(re.findall('[0-9]',amount_tag.text))
-                resource_id_tag = ingredient_row.find('a')
-                resource_id = self.get_id(resource_id_tag['href'])
-                ingredient = Ingredient(resource_id=resource_id, quantity=amount)
+                ingredient_id_tag = ingredient_row.find('a')
+                ingredient_id = self.get_id(ingredient_id_tag['href'])
+                is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
+                if not is_equipment_id:
+                    ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
+                else:
+                    ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
                 recipe.ingredients.append(ingredient)
             return recipe
         else:
