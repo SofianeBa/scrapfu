@@ -9,6 +9,9 @@ class Scraper():
         self.dr = driver
         self.options = options
         self.url_queue = queue
+        self.failed_urls = {}
+        self.skipped_urls = {}
+        
 
     def save_image(self, imagelink, imageName):
             blob_client = self.blob_service_client.get_blob_client(container='dofus-pics', blob=f'{imageName}.png')
@@ -21,8 +24,11 @@ class Scraper():
 
     def get_image_link(self,soup):
         resourceImage = soup.find('div', {'class':'ak-encyclo-detail-illu'})
-        resourceImage = resourceImage.findChild('img')
-        resourceImageLink = resourceImage['src']
+        if resourceImage:
+            resourceImage = resourceImage.findChild('img')
+            resourceImageLink = resourceImage['src']
+        else:
+            return None
         return resourceImageLink
 
     def get_name(self,soup):

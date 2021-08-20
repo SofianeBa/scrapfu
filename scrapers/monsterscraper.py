@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from .scraper import Scraper
 from models.monster import Monster
 from helpers import db
+from sqlalchemy import exists
 import time
 
 class Monsterscraper(Scraper):
@@ -50,82 +51,63 @@ class Monsterscraper(Scraper):
         return family.text
 
     def get_monster_info(self, url):
-        time.sleep(5)
-        driver = self.dr.create_driver(self.options)
-        driver.get(url)
-        soup = BeautifulSoup(driver.page_source, 'lxml')
-        if soup.find('div', {'class': 'ak-404'}) == None:
-            try:
-                monsterImageLink = self.get_image_link(soup)
-                name = self.get_name(soup)
-                id = self.get_id(url)
-                self.save_image(monsterImageLink,name)
-                family = self.get_family(soup)
-                levelRange = soup.find('div', {'class': 'col-xs-4 text-right ak-encyclo-detail-level'},text=True)
-                minLevel, maxLevel = self.parse_level_ranges(str.split(levelRange.text, sep="to"))
-                minHp, maxHp = self.parse_ranges(soup, 'HP:')
-                minAp, maxAp = self.parse_ranges(soup, "AP:")
-                minMp, maxMp = self.parse_ranges(soup, "MP:")
-                minEarthRes,maxEarthRes = self.parse_ranges(soup, "Earth:")
-                minAirRes, maxAirRes = self.parse_ranges(soup, "Air:")
-                minFireRes, maxFireRes = self.parse_ranges(soup, "Fire:")
-                minWaterRes, maxWaterRes = self.parse_ranges(soup, "Water:")
-                minNeutralRes, maxNeutralRes = self.parse_ranges(soup, "Neutral:")
-                monster = Monster(
-                    id = id,
-                    name=name,
-                    minlevel=minLevel,
-                    maxlevel=maxLevel,
-                    minmp=minMp,
-                    maxmp=maxMp,
-                    minap=minAp,
-                    maxap=maxAp,
-                    family=family,
-                    minhp=minHp,
-                    maxhp=maxHp,
-                    minearthres=minEarthRes,
-                    maxearthres=maxEarthRes,
-                    minwaterres=minWaterRes,
-                    maxwaterres=maxWaterRes,
-                    minfireres=minFireRes,
-                    maxfireres=maxFireRes,
-                    minairres=minAirRes,
-                    maxairres=maxAirRes,
-                    minneutralres=minNeutralRes,
-                    maxneutralres=maxNeutralRes)
-                driver.quit()
-                old_monster = self.session.get(Monster, monster.id)
-                if old_monster:
-                    old_monster.id = id
-                    old_monster.name=name
-                    old_monster.minlevel=minLevel
-                    old_monster.maxlevel=maxLevel
-                    old_monster.minmp=minMp
-                    old_monster.maxmp=maxMp
-                    old_monster.minap=minAp
-                    old_monster.maxap=maxAp
-                    old_monster.family=family
-                    old_monster.minhp=minHp
-                    old_monster.maxhp=maxHp
-                    old_monster.minearthres=minEarthRes
-                    old_monster.maxearthres=maxEarthRes
-                    old_monster.minwaterres=minWaterRes
-                    old_monster.maxwaterres=maxWaterRes
-                    old_monster.minfireres=minFireRes
-                    old_monster.maxfireres=maxFireRes
-                    old_monster.minairres=minAirRes
-                    old_monster.maxairres=maxAirRes
-                    old_monster.minneutralres=minNeutralRes
-                    old_monster.maxneutralres=maxNeutralRes
-                    self.session.commit()
-                    return None
-                else:
+        id = self.get_id(url)
+        monster_exists = self.session.query(exists().where(Monster.id == id)).scalar()
+        if not monster_exists:
+            time.sleep(5)
+            driver = self.dr.create_driver(self.options)
+            driver.get(url)
+            soup = BeautifulSoup(driver.page_source, 'lxml')
+            if soup.find('div', {'class': 'ak-404'}) == None:
+                try:
+                    monsterImageLink = self.get_image_link(soup)
+                    name = self.get_name(soup)
+                    if monsterImageLink:
+                        self.save_image(monsterImageLink,name)
+                    family = self.get_family(soup)
+                    levelRange = soup.find('div', {'class': 'col-xs-4 text-right ak-encyclo-detail-level'},text=True)
+                    minLevel, maxLevel = self.parse_level_ranges(str.split(levelRange.text, sep="to"))
+                    minHp, maxHp = self.parse_ranges(soup, 'HP:')
+                    minAp, maxAp = self.parse_ranges(soup, "AP:")
+                    minMp, maxMp = self.parse_ranges(soup, "MP:")
+                    minEarthRes,maxEarthRes = self.parse_ranges(soup, "Earth:")
+                    minAirRes, maxAirRes = self.parse_ranges(soup, "Air:")
+                    minFireRes, maxFireRes = self.parse_ranges(soup, "Fire:")
+                    minWaterRes, maxWaterRes = self.parse_ranges(soup, "Water:")
+                    minNeutralRes, maxNeutralRes = self.parse_ranges(soup, "Neutral:")
+                    monster = Monster(
+                        id = id,
+                        name=name,
+                        minlevel=minLevel,
+                        maxlevel=maxLevel,
+                        minmp=minMp,
+                        maxmp=maxMp,
+                        minap=minAp,
+                        maxap=maxAp,
+                        family=family,
+                        minhp=minHp,
+                        maxhp=maxHp,
+                        minearthres=minEarthRes,
+                        maxearthres=maxEarthRes,
+                        minwaterres=minWaterRes,
+                        maxwaterres=maxWaterRes,
+                        minfireres=minFireRes,
+                        maxfireres=maxFireRes,
+                        minairres=minAirRes,
+                        maxairres=maxAirRes,
+                        minneutralres=minNeutralRes,
+                        maxneutralres=maxNeutralRes)
+                    driver.quit()
                     return monster
-            except:
-                print('something went wrong!')
+                except Exception as e:
+                    self.failed_urls[url] == e
+                    driver.quit()
+                    return None
+            else:
                 driver.quit()
+                self.skipped_urls[url] == 'Skipping due to 404'
                 return None
         else:
-            driver.quit()
+            self.skipped_urls[url] == 'Present in DB. Skipping'
             return None
             

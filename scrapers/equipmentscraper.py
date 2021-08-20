@@ -2,6 +2,7 @@ from .scraper import Scraper
 import time
 from helpers import db
 import re
+from sqlalchemy import exists
 from bs4 import BeautifulSoup
 from models.equipment import Equipment
 from models.recipe import Recipe
@@ -113,169 +114,175 @@ class Equipmentscraper(Scraper):
         
 
     def get_equipment_info(self, url):
-        equipment = Equipment()
-        recipe = Recipe()
-        time.sleep(5)
-        driver = self.dr.create_driver(self.options)
-        driver.get(url)
-        soup = BeautifulSoup(driver.page_source, 'lxml')
-        if soup.find('div', {'class': 'ak-404'}) == None:
-            try:
-                equipment.id = self.get_id(url)
-                equipment.type = self.get_type(soup)
-                equipment.level = self.get_level(soup)
-                equipment.name =  self.get_name(soup)
-                equipment.description = self.get_description(soup)
-                equipment_image_link = self.get_image_link(soup)
-                effect_fields = self.find_effect_fields(soup)
-                if effect_fields:
-                    scraped_fields = self.scrape_effect_fields(effect_fields)
-                    keywords = scraped_fields.keys()
-                    for keyword in keywords:
-                        min_value, max_value = scraped_fields[keyword] 
-                        if keyword =='AP':
-                            equipment.min_ap = min_value
-                            equipment.max_ap = max_value
-                        if keyword =='AP Parry':
-                            equipment.min_ap_parry = min_value
-                            equipment.max_ap_parry = max_value
-                        if keyword =='AP Reduction':
-                            equipment.min_ap_reduction = min_value
-                            equipment.max_ap_reduction = max_value
-                        if keyword =='Agility': 
-                            equipment.min_agility = min_value
-                            equipment.max_agility = max_value
-                        if keyword =='Air Damage':
-                            equipment.min_air_damage = min_value
-                            equipment.max_air_damage = max_value
-                        if keyword =='% Air Resistance':
-                            equipment.min_percent_air_res = min_value
-                            equipment.max_percent_air_res = max_value
-                        if keyword =='Chance':
-                            equipment.min_chance = min_value
-                            equipment.max_chance = max_value
-                        if keyword =='Water Damage':
-                            equipment.min_water_damage = min_value
-                            equipment.max_water_damage = max_value
-                        if keyword =='% Water Resistance':
-                            equipment.min_percent_water_res = min_value
-                            equipment.max_percent_water_res = max_value
-                        if keyword =='Prospecting':
-                            equipment.min_prospecting = min_value
-                            equipment.max_prospecting = max_value
-                        if keyword =='Intelligence':
-                            equipment.min_intelligence = min_value
-                            equipment.max_intelligence = max_value
-                        if keyword =='Fire Damage' :
-                            equipment.min_fire_damage = min_value
-                            equipment.max_fire_damage = max_value
-                        if keyword =='% Fire resistance':
-                            equipment.min_percent_fire_res = min_value
-                            equipment.max_percent_fire_res = max_value
-                        if keyword =='Strength' :
-                            equipment.min_strength = min_value
-                            equipment.max_strength = max_value
-                        if keyword =='Earth Damage':
-                            equipment.min_earth_damage = min_value
-                            equipment.max_earth_damage = max_value
-                        if keyword =='% Earth Resistance': 
-                            equipment.min_percent_earth_res = min_value
-                            equipment.max_percent_earth_res = max_value
-                        if keyword =='Pods' :
-                            equipment.min_pods = min_value
-                            equipment.max_pods = max_value
-                        if keyword =='Wisdom':
-                            equipment.min_wisdom = min_value
-                            equipment.max_wisdom = max_value
-                        if keyword =='Neutral Damage':
-                            equipment.min_neutral_damage = min_value
-                            equipment.max_neutral_damage = max_value
-                        if keyword =='% Neutral Resistance':
-                            equipment.min_percent_neutral_res = min_value
-                            equipment.max_percent_neutral_res = max_value
-                        if keyword =='Damage':
-                            equipment.min_damage = min_value
-                            equipment.max_damage = max_value
-                        if keyword =='Damage Reflected':
-                            equipment.min_damage_reflected = min_value
-                            equipment.max_damage_reflected = max_value
-                        if keyword =='Critical Damage':
-                            equipment.min_critical_damage = min_value
-                            equipment.max_critical_damage = max_value
-                        if keyword =='Critical Resistance':
-                            equipment.min_critical_res = min_value
-                            equipment.max_critical_res = max_value
-                        if keyword =='% Critical':
-                            equipment.min_percent_critical = min_value
-                            equipment.max_percent_critical = max_value
-                        if keyword =='Pushback Damage':
-                            equipment.min_pushback_damage = min_value
-                            equipment.max_pushback_damage = max_value
-                        if keyword =='Pushback Resistance':
-                            equipment.min_pushback_res = min_value
-                            equipment.max_pushback_res = max_value
-                        if keyword =='Dodge':
-                            equipment.min_dodge = min_value
-                            equipment.max_dodge = max_value
-                        if keyword =='Heals':
-                            equipment.min_heals = min_value
-                            equipment.max_heals = max_value
-                        if keyword =='Initiative':
-                            equipment.min_initiative = min_value
-                            equipment.max_initiative = max_value
-                        if keyword =='Lock' :
-                            equipment.min_lock = min_value
-                            equipment.max_lock = max_value
-                        if keyword =='MP':
-                            equipment.min_mp = min_value
-                            equipment.max_mp = max_value
-                        if keyword =='MP Parry':
-                            equipment.min_mp_parry = min_value
-                            equipment.max_mp_parry = max_value
-                        if keyword =='MP Reduction':
-                            equipment.min_mp_reduction = min_value
-                            equipment.max_mp_reduction = max_value
-                        if keyword =='% Melee Damage': 
-                            equipment.min_percent_melee_damage = min_value
-                            equipment.max_percent_melee_damage = max_value
-                        if keyword =='% Melee Resistance':
-                            equipment.min_percent_melee_res = min_value
-                            equipment.max_percent_melee_res = max_value
-                        if keyword =='% Ranged Damage' :
-                            equipment.min_percent_ranged_damage = min_value
-                            equipment.max_percent_ranged_damage = max_value
-                        if keyword =='% Ranged Resistance':
-                            equipment.min_percent_ranged_res = min_value
-                            equipment.max_percent_ranged_res = max_value
-                        if keyword =='% Spell Damage' :
-                            equipment.min_percent_spell_damage = min_value
-                            equipment.max_percent_spell_damage = max_value
-                        if keyword =='% Weapon Damage':
-                            equipment.min_percent_weapon_damage = min_value
-                            equipment.max_percent_weapon_damage = max_value
-                        if keyword =='Summons':
-                            equipment.min_summons = min_value
-                            equipment.max_summons = max_value
-                        if keyword =='Trap Damage': 
-                            equipment.min_range = min_value
-                            equipment.max_range = max_value
-                        if keyword =='Range':
-                            equipment.min_range = min_value
-                            equipment.max_range = max_value
-                        if keyword =='Vitality':
-                            equipment.min_vitality = min_value
-                            equipment.max_vitality = max_value
-                            
-                recipe = self.get_recipe(soup, recipe)
-                if recipe:
-                    equipment.recipe = recipe
-                self.save_image(equipment_image_link, equipment.name)
+        id = self.get_id(url)
+        equipment_exists = self.session.query(exists().where(Equipment.id == id)).scalar()
+        if not equipment_exists:
+            equipment = Equipment()
+            recipe = Recipe()
+            time.sleep(5)
+            driver = self.dr.create_driver(self.options)
+            driver.get(url)
+            soup = BeautifulSoup(driver.page_source, 'lxml')
+            if soup.find('div', {'class': 'ak-404'}) == None:
+                try:
+                    equipment.id = id
+                    equipment.type = self.get_type(soup)
+                    equipment.level = self.get_level(soup)
+                    equipment.name =  self.get_name(soup)
+                    equipment.description = self.get_description(soup)
+                    equipment_image_link = self.get_image_link(soup)
+                    effect_fields = self.find_effect_fields(soup)
+                    if effect_fields:
+                        scraped_fields = self.scrape_effect_fields(effect_fields)
+                        keywords = scraped_fields.keys()
+                        for keyword in keywords:
+                            min_value, max_value = scraped_fields[keyword] 
+                            if keyword =='AP':
+                                equipment.min_ap = min_value
+                                equipment.max_ap = max_value
+                            if keyword =='AP Parry':
+                                equipment.min_ap_parry = min_value
+                                equipment.max_ap_parry = max_value
+                            if keyword =='AP Reduction':
+                                equipment.min_ap_reduction = min_value
+                                equipment.max_ap_reduction = max_value
+                            if keyword =='Agility': 
+                                equipment.min_agility = min_value
+                                equipment.max_agility = max_value
+                            if keyword =='Air Damage':
+                                equipment.min_air_damage = min_value
+                                equipment.max_air_damage = max_value
+                            if keyword =='% Air Resistance':
+                                equipment.min_percent_air_res = min_value
+                                equipment.max_percent_air_res = max_value
+                            if keyword =='Chance':
+                                equipment.min_chance = min_value
+                                equipment.max_chance = max_value
+                            if keyword =='Water Damage':
+                                equipment.min_water_damage = min_value
+                                equipment.max_water_damage = max_value
+                            if keyword =='% Water Resistance':
+                                equipment.min_percent_water_res = min_value
+                                equipment.max_percent_water_res = max_value
+                            if keyword =='Prospecting':
+                                equipment.min_prospecting = min_value
+                                equipment.max_prospecting = max_value
+                            if keyword =='Intelligence':
+                                equipment.min_intelligence = min_value
+                                equipment.max_intelligence = max_value
+                            if keyword =='Fire Damage' :
+                                equipment.min_fire_damage = min_value
+                                equipment.max_fire_damage = max_value
+                            if keyword =='% Fire resistance':
+                                equipment.min_percent_fire_res = min_value
+                                equipment.max_percent_fire_res = max_value
+                            if keyword =='Strength' :
+                                equipment.min_strength = min_value
+                                equipment.max_strength = max_value
+                            if keyword =='Earth Damage':
+                                equipment.min_earth_damage = min_value
+                                equipment.max_earth_damage = max_value
+                            if keyword =='% Earth Resistance': 
+                                equipment.min_percent_earth_res = min_value
+                                equipment.max_percent_earth_res = max_value
+                            if keyword =='Pods' :
+                                equipment.min_pods = min_value
+                                equipment.max_pods = max_value
+                            if keyword =='Wisdom':
+                                equipment.min_wisdom = min_value
+                                equipment.max_wisdom = max_value
+                            if keyword =='Neutral Damage':
+                                equipment.min_neutral_damage = min_value
+                                equipment.max_neutral_damage = max_value
+                            if keyword =='% Neutral Resistance':
+                                equipment.min_percent_neutral_res = min_value
+                                equipment.max_percent_neutral_res = max_value
+                            if keyword =='Damage':
+                                equipment.min_damage = min_value
+                                equipment.max_damage = max_value
+                            if keyword =='Damage Reflected':
+                                equipment.min_damage_reflected = min_value
+                                equipment.max_damage_reflected = max_value
+                            if keyword =='Critical Damage':
+                                equipment.min_critical_damage = min_value
+                                equipment.max_critical_damage = max_value
+                            if keyword =='Critical Resistance':
+                                equipment.min_critical_res = min_value
+                                equipment.max_critical_res = max_value
+                            if keyword =='% Critical':
+                                equipment.min_percent_critical = min_value
+                                equipment.max_percent_critical = max_value
+                            if keyword =='Pushback Damage':
+                                equipment.min_pushback_damage = min_value
+                                equipment.max_pushback_damage = max_value
+                            if keyword =='Pushback Resistance':
+                                equipment.min_pushback_res = min_value
+                                equipment.max_pushback_res = max_value
+                            if keyword =='Dodge':
+                                equipment.min_dodge = min_value
+                                equipment.max_dodge = max_value
+                            if keyword =='Heals':
+                                equipment.min_heals = min_value
+                                equipment.max_heals = max_value
+                            if keyword =='Initiative':
+                                equipment.min_initiative = min_value
+                                equipment.max_initiative = max_value
+                            if keyword =='Lock' :
+                                equipment.min_lock = min_value
+                                equipment.max_lock = max_value
+                            if keyword =='MP':
+                                equipment.min_mp = min_value
+                                equipment.max_mp = max_value
+                            if keyword =='MP Parry':
+                                equipment.min_mp_parry = min_value
+                                equipment.max_mp_parry = max_value
+                            if keyword =='MP Reduction':
+                                equipment.min_mp_reduction = min_value
+                                equipment.max_mp_reduction = max_value
+                            if keyword =='% Melee Damage': 
+                                equipment.min_percent_melee_damage = min_value
+                                equipment.max_percent_melee_damage = max_value
+                            if keyword =='% Melee Resistance':
+                                equipment.min_percent_melee_res = min_value
+                                equipment.max_percent_melee_res = max_value
+                            if keyword =='% Ranged Damage' :
+                                equipment.min_percent_ranged_damage = min_value
+                                equipment.max_percent_ranged_damage = max_value
+                            if keyword =='% Ranged Resistance':
+                                equipment.min_percent_ranged_res = min_value
+                                equipment.max_percent_ranged_res = max_value
+                            if keyword =='% Spell Damage' :
+                                equipment.min_percent_spell_damage = min_value
+                                equipment.max_percent_spell_damage = max_value
+                            if keyword =='% Weapon Damage':
+                                equipment.min_percent_weapon_damage = min_value
+                                equipment.max_percent_weapon_damage = max_value
+                            if keyword =='Summons':
+                                equipment.min_summons = min_value
+                                equipment.max_summons = max_value
+                            if keyword =='Trap Damage': 
+                                equipment.min_range = min_value
+                                equipment.max_range = max_value
+                            if keyword =='Range':
+                                equipment.min_range = min_value
+                                equipment.max_range = max_value
+                            if keyword =='Vitality':
+                                equipment.min_vitality = min_value
+                                equipment.max_vitality = max_value
+                                
+                    recipe = self.get_recipe(soup, recipe)
+                    if recipe:
+                        equipment.recipe = recipe
+                    self.save_image(equipment_image_link, equipment.name)
+                    driver.quit()
+                    return equipment
+                except Exception as e: 
+                    driver.quit()
+                    self.failed_urls[url] = e
+                    return None
+            else:
                 driver.quit()
-                return equipment
-            except Exception as e: 
-                driver.quit()
-                print(e)
+                self.skipped_urls[url] = 'skipped url due to 404'
                 return None
         else:
-            driver.quit()
-            return None
+            self.skipped_urls[url] = 'Already present in db. Skipping'
