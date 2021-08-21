@@ -18,7 +18,7 @@ class Weapon(Base):
     min_effective_range = Column(Integer, nullable=False)
     max_effective_range = Column(Integer, nullable = False)
     crit_hit_chance = Column(Integer, nullable = False)
-    crit_hit_bonus = Column(Integer, nullable = False)
+    crit_hit_bonus = Column(Integer, nullable = True)
     conditions = Column(Text, nullable = True)
     #Core Effects
     min_percent_air_res= Column(Integer, nullable = True)
