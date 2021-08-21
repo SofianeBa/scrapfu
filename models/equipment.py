@@ -104,4 +104,4 @@ class Equipment(Base):
     max_range = Column(Integer, nullable = True)
     #relationships
     recipe = relationship('Recipe', back_populates='equipment', uselist=False)
-    ingredient = relationship('Ingredient', back_populates='equipment')
+    ingredients = relationship('Ingredient', back_populates='equipment')

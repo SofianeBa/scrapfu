@@ -2,6 +2,7 @@ from queue import Queue
 from selenium.webdriver.chrome.options import Options
 from concurrent import futures
 from azure.storage.blob import BlobServiceClient
+import sqlalchemy
 from scrapers.monsterscraper import Monsterscraper
 from scrapers.resourcescraper import Resourcescraper
 from scrapers.professionscraper import Professionscraper
@@ -28,7 +29,7 @@ def write_to_log(file_name, msg):
     with open(file_name, 'a+') as file:
         file.write(msg)
 
-def start_scraping(monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None):
+def start_scraping(log_file_name,monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None):
     with futures.ThreadPoolExecutor(max_workers=3) as executer:
         if monster_url != None:
             future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster', 92): 'URL_FUTURE'}
@@ -37,16 +38,15 @@ def start_scraping(monster_url = None, resource_url = None, profession_url = Non
         if profession_url !=None:
             future_to_url = {executer.submit(professionscraper.get_link, profession_url, 'Profession', 2): 'URL_FUTURE'}
         if equipment_url !=None:
-            future_to_url = {executer.submit(equipmentscraper.get_link, equipment_url, 'Equipment', 34): 'URL_FUTURE'}
+            future_to_url = {executer.submit(equipmentscraper.get_link, equipment_url, 'Equipment', 101): 'URL_FUTURE'}
         if weapon_url !=None:
-            future_to_url = {executer.submit(weaponscraper.get_link, weapon_url, 'Weapon', 101): 'URL_FUTURE'}
+            future_to_url = {executer.submit(weaponscraper.get_link, weapon_url, 'Weapon', 36): 'URL_FUTURE'}
         while future_to_url:
             done, not_done = futures.wait(future_to_url,return_when=futures.FIRST_COMPLETED)
             while not url_queue.empty():
                 url_dict = url_queue.get()
                 url = next(iter(url_dict))
                 tag = url_dict[url]
-                write_to_log('log.txt', f'scraping: {url}\n')
                 if tag == 'Monster':
                     future_to_url[executer.submit(monsterscraper.get_monster_info, url)] = url
                 elif tag == "Resource":
@@ -59,37 +59,33 @@ def start_scraping(monster_url = None, resource_url = None, profession_url = Non
                     future_to_url[executer.submit(weaponscraper.get_weapon_info, url)] = url
             for future in done:
                 data = future.result()
-                if future_to_url[future] == 'URL_FUTURE':
-                    write_to_log('log.txt', f'{data}\n')
-                if data == None:
-                    write_to_log('log.txt',f'Nothing to scrape: {future_to_url[future]}\n')
                 if data != None and future_to_url[future] != 'URL_FUTURE':
                     #put into database
                     try:
                         session.add(data)
                         session.commit()
+                        write_to_log(log_file_name, f'successfully scraped: {future_to_url[future]}\n')
                     except Exception as e:
-                        print(e)
-                        write_to_log('log.txt',f'failed to commit data: rolling back session for url: {future_to_url[future]}\n')
+                        write_to_log(log_file_name,f'failed to commit data: rolling back session for url: {future_to_url[future]}\n')
+                        write_to_log(log_file_name,f'{e}')
                         session.rollback()
-                    write_to_log('log.txt', f'scraped: {future_to_url[future]}\n')
                 del future_to_url[future]
 
 def scrape_monsters():
-    start_scraping(monster_url='/en/mmorpg/encyclopedia/monsters?page=')
-    for url, reason in resourcescraper.failed_urls.items():
+    start_scraping('monster_log.txt', monster_url='/en/mmorpg/encyclopedia/monsters?page=')
+    for url, reason in monsterscraper.failed_urls.items():
         write_to_log('monster_log.txt', f'{url}: {reason}\n')
     for i in range(0,5):
         write_to_log('monster_log.txt', '\n')
-    for url, reason in resourcescraper.skipped_urls.items():
+    for url, reason in monsterscraper.skipped_urls.items():
         write_to_log('monster_log.txt', f'{url}: {reason}\n')
 
 def scrape_resources():
-    start_scraping(resource_url='/en/mmorpg/encyclopedia/resources?page=')
+    start_scraping('resource_log.txt',resource_url='/en/mmorpg/encyclopedia/resources?page=')
     for url, reason in resourcescraper.failed_urls.items():
         write_to_log('resource_log.txt', f'{url}: {reason}\n')
     for i in range(0,5):
-        write_to_log('monster_log.txt', '\n')
+        write_to_log('resource_log.txt', '\n')
     for url, reason in resourcescraper.skipped_urls.items():
         write_to_log('resource_log.txt', f'{url}: {reason}\n')
 
@@ -97,17 +93,24 @@ def scrape_professions():
     start_scraping(profession_url='/en/mmorpg/encyclopedia/professions?page=')
 
 def scrape_equipment():
-    start_scraping(equipment_url='/en/mmorpg/encyclopedia/equipment?page=')
-    for url, reason in resourcescraper.failed_urls.items():
+    start_scraping('equipment_log.txt',equipment_url='/en/mmorpg/encyclopedia/equipment?page=')
+    for url, reason in equipmentscraper.failed_urls.items():
         write_to_log('equipment_log.txt', f'{url}: {reason}\n')
     for i in range(0,5):
         write_to_log('equipment_log.txt', '\n')
-    for url, reason in resourcescraper.skipped_urls.items():
+    for url, reason in equipmentscraper.skipped_urls.items():
         write_to_log('equipment_log.txt', f'{url}: {reason}\n')
 
 def scrape_weapons():
-    start_scraping(weapon_url='/en/mmorpg/encyclopedia/weapons?page=')
+    start_scraping('weapon_log.txt',weapon_url='/en/mmorpg/encyclopedia/weapons?page=')
+    for url, reason in weaponscraper.failed_urls.items():
+        write_to_log('weapon_log.txt', f'{url}: {reason}\n')
+    for i in range(0,5):
+        write_to_log('weapon_log.txt', '\n')
+    for url, reason in weaponscraper.skipped_urls.items():
+        write_to_log('weapon_log.txt', f'{url}: {reason}\n')
 
 #scrape_monsters()
 #scrape_resources()
-scrape_equipment()
+#scrape_equipment()
+#scrape_weapons()

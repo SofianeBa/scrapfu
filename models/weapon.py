@@ -18,6 +18,8 @@ class Weapon(Base):
     min_effective_range = Column(Integer, nullable=False)
     max_effective_range = Column(Integer, nullable = False)
     crit_hit_chance = Column(Integer, nullable = False)
+    crit_hit_bonus = Column(Integer, nullable = False)
+    conditions = Column(Text, nullable = True)
     #Core Effects
     min_percent_air_res= Column(Integer, nullable = True)
     max_percent_air_res= Column(Integer, nullable = True)
@@ -148,5 +150,7 @@ class Weapon(Base):
     min_summons = Column(Integer, nullable = True)
     max_summons = Column(Integer, nullable = True)
     is_hunting_weapon = Column(Boolean, nullable = True)
+    use_per_turn = Column(Integer, nullable = True)
     #Relationships
     recipe = relationship('Recipe', back_populates='weapon', uselist=False)
+    ingredients = relationship('Ingredient', back_populates='weapon')
