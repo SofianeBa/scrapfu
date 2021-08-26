@@ -44,7 +44,6 @@ class Weapon(Base):
     fire_res= Column(INT4RANGE, nullable = True)
     wisdom= Column(INT4RANGE, nullable = True)
     neutral_damage= Column(INT4RANGE, nullable = True)
-    neutral_steal= Column(INT4RANGE, nullable = True)
     neutral_res= Column(INT4RANGE, nullable = True)
     chance= Column(INT4RANGE, nullable = True)
     water_damage= Column(INT4RANGE, nullable = True)
