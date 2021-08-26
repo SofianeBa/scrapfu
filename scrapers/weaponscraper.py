@@ -1,5 +1,4 @@
-from decimal import DivisionByZero
-from sqlalchemy.sql.sqltypes import Numeric
+from psycopg2.extras import NumericRange
 from .scraper import Scraper
 import time
 import re
@@ -16,14 +15,21 @@ from sqlalchemy import exists
 class Weaponscraper(Scraper):
     def __init__(self,blob_service_client, driver, options, queue):
         super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
-        self.keywords = ['% Air Resistance','% Earth Resistance','% Fire Resistance','% Neutral Resistance','% Water Resistance','% Ranged Resistance','% Weapon Damage',
-        '% Ranged Damage','% Spell Damage','% Critical','Critical Damage','Critical Resistance','Vitality',
-        'Agility','Air Damage','Air Steal','Air Resistance','Strength','Earth Damage','Earth Steal','Earth Resistance','Intelligence','Fire Damage',
-        'Fire Steal','Fire Resistance','Wisdom','Neutral Damage','Neutral Steal','Neutral Resistance','Chance','Water Damage','Water Steal',
-        'Water Resistance','Damage','AP','AP Parry','AP Reduction','Hunting Weapon','Summons','MP','MP Parry','MP Reduction','Dodge','Heals',
-        'Initiative','Lock','Range','Prospecting','Pushaback Damage','Pushback Resistance','Power','Power (traps)','Trap Damage','kamas',
-        '(Neutral damage)','(Fire damage)','(Water damage)','(Earth damage)','(Air damage)','(Neutral steal)','(Fire steal)','(Water steal)',
-        '(Earth steal)','(Air steal)','(HP restored)']
+        self.keywords = {
+        '% Air Resistance': 'percent_air_res','% Earth Resistance': 'percent_earth_res','% Fire Resistance': 'percent_fire_res',
+        '% Neutral Resistance': 'percent_neutral_res','% Water Resistance': 'percent_water_res','% Ranged Resistance': 'percent_ranged_res',
+        '% Weapon Damage':'percent_weapon_damage','% Ranged Damage': 'percent_ranged_damage','% Spell Damage': 'percent_spell_damage',
+        '% Critical': 'percent_crit','Critical Damage': 'crit_damage','Critical Resistance': 'crit_res','Vitality': 'vitality','Agility': 'agility',
+        'Air Damage': 'air_damage','Air Resistance': 'air_res','Strength': 'strength','Earth Damage': 'earth_damage','Earth Resistance': 'earth_Res',
+        'Intelligence': 'intelligence','Fire Damage': 'fire_damage','Fire Resistance': 'fire_res','Wisdom': 'wisdom','Neutral Damage': 'neutral_damage',
+        'Neutral Resistance': 'neutral_res','Chance': 'chance','Water Damage': 'water_damage','Water Resistance': 'water_Res','Damage': 'damage',
+        'AP': 'ap','AP Parry': 'ap_parry','AP Reduction': 'ap_reduction','Hunting weapon': 'is_hunting_weapon','Summons': 'summons','MP': 'mp','MP Parry': 'mp_parry',
+        'MP Reduction': 'mp_reduction','Dodge': 'dodge','Heals': 'heals','Initiative': 'initiative','Lock': 'lock','Range': 'range','Prospecting': 'prospecting',
+        'Pushaback Damage': 'pushback_damage','Pushback Resistance': 'pushback_res','Power': 'power','Power (traps)': 'trap_power','Trap Damage': 'trap_damage',
+        'kamas': 'steals_kamas','(Neutral damage)': 'attack_neutral_damage','(Fire damage)': 'attack_fire_damage','(Water damage)': 'attack_water_damage',
+        '(Earth damage)': 'attack_earth_damage','(Air damage)': 'attack_air_damage','(Neutral steal)': 'attack_neutral_steal','(Fire steal)': 'attack_fire_steal',
+        '(Water steal)': 'attack_water_steal','(Earth steal)': 'attack_earth_steal','(Air steal)': 'attack_air_steal','(HP restored)': 'attack_hp_steal'
+        }
         self.found_keywords = []
         self.Session = db.create_session()
         self.session = self.Session()
@@ -63,13 +69,16 @@ class Weaponscraper(Scraper):
 
     def scrape_effect_fields(self, effect_fields):
         scraped_fields = {}
-        expression = '$|'.join(keyword for keyword in self.keywords)
+        expression = '$|'.join(keyword for keyword in self.keywords.keys())
         for effect_field in effect_fields:
             match = re.search(expression, str.strip(effect_field.text))
             if match:
                 keyword = match.group(0)
-                min_value, max_value = self.get_min_max_values(effect_field.text)
-                scraped_fields[keyword] = (min_value,max_value)
+                if keyword != 'Hunting weapon':
+                    min_value, max_value = self.get_min_max_values(effect_field.text)
+                    scraped_fields[keyword] = (min_value,max_value)
+                elif keyword == 'Hunting weapon':
+                    scraped_fields[keyword] = (0,0)
         return scraped_fields
 
 
@@ -184,7 +193,8 @@ class Weaponscraper(Scraper):
                     weapon.use_per_turn = self.get_characteristic(characteristics_divs, 'use_per_turn')
                     weapon.crit_hit_chance = self.get_characteristic(characteristics_divs, 'crit_hit_chance')
                     weapon.crit_hit_bonus = self.get_characteristic(characteristics_divs, 'crit_hit_bonus')
-                    weapon.min_effective_range, weapon.max_effective_range = self.get_characteristic(characteristics_divs, 'effective_range') 
+                    min_effective_range, max_effective_range = self.get_characteristic(characteristics_divs, 'effective_range')
+                    weapon.effective_range = NumericRange(lower=min_effective_range,upper=max_effective_range,bounds='[]', empty=False)
                     weapon.conditions = self.get_conditions(soup)
                     weapon.description = self.get_description(soup)
                     equipment_image_link = self.get_image_link(soup)
@@ -193,200 +203,10 @@ class Weaponscraper(Scraper):
                     keywords = scraped_fields.keys()
                     for keyword in keywords:
                         min_value, max_value = scraped_fields[keyword]
-                        if keyword == '% Air Resistance':
-                            weapon.min_percent_air_res = min_value
-                            weapon.max_percent_air_res = max_value
-                        if keyword == '% Earth Resistance':
-                            weapon.min_percent_earth_res = min_value
-                            weapon.min_percent_earth_res = max_value
-                        if keyword == '% Fire Resistance':
-                            weapon.min_percent_fire_res = min_value
-                            weapon.max_percent_fire_res = max_value
-                        if keyword == '% Neutral Resistance':
-                            weapon.min_percent_neutral_res = min_value
-                            weapon.max_percent_neutral_res = max_value
-                        if keyword == '% Water Resistance':
-                            weapon.min_percent_water_res = min_value
-                            weapon.max_percent_water_res = max_value
-                        if keyword == '% Ranged Resistance':
-                            weapon.min_percent_ranged_res = min_value
-                            weapon.max_percent_ranged_res = max_value
-                        if keyword == '% Weapon Damage':
-                            weapon.min_percent_weapon_damage = min_value
-                            weapon.max_percent_weapon_damage = max_value
-                        if keyword == '% Ranged Damage':
-                            weapon.min_percent_ranged_damage = min_value
-                            weapon.max_percent_ranged_damage = max_value
-                        if keyword == '% Spell Damage':
-                            weapon.min_percent_spell_damage = min_value
-                            weapon.max_percent_spell_damage = max_value
-                        if keyword == '% Critical':
-                            weapon.min_percent_crit = min_value
-                            weapon.max_percent_crit = max_value
-                        if keyword == 'Critical Damage':
-                            weapon.min_crit_damage = min_value
-                            weapon.max_crit_damage = max_value
-                        if keyword == 'Critical Resistance':
-                            weapon.min_crit_res = min_value
-                            weapon.max_crit_res = max_value
-                        if keyword == 'Vitality':
-                            weapon.min_vitality = min_value
-                            weapon.max_vitality = max_value
-                        if keyword == 'Agility':
-                            weapon.min_agility = min_value
-                            weapon.max_agility = max_value
-                        if keyword == 'Air Damage':
-                            weapon.min_air_damage = min_value
-                            weapon.max_air_damage = max_value
-                        if keyword == 'Air Steal':
-                            weapon.min_air_steal = min_value
-                            weapon.max_air_steal = max_value
-                        if keyword == 'Air Resistance':
-                            weapon.min_air_res = min_value
-                            weapon.max_air_res = max_value
-                        if keyword == 'Strength':
-                            weapon.min_strength = min_value
-                            weapon.max_strength = max_value
-                        if keyword == 'Earth Damage':
-                            weapon.min_earth_damage = min_value
-                            weapon.max_earth_damage = max_value
-                        if keyword == 'Earth Steal':
-                            weapon.min_earth_steal = min_value
-                            weapon.max_earth_steal = max_value
-                        if keyword == 'Earth Resistance':
-                            weapon.min_earth_Res = min_value
-                            weapon.max_earth_Res = max_value
-                        if keyword == 'Intelligence':
-                            weapon.min_intelligence = min_value
-                            weapon.max_intelligence = max_value
-                        if keyword == 'Fire Damage':
-                            weapon.min_fire_damage = min_value
-                            weapon.max_fire_damage = max_value
-                        if keyword == 'Fire Steal':
-                            weapon.min_fire_steal = min_value
-                            weapon.max_fire_steal = max_value
-                        if keyword == 'Fire Resistance':
-                            weapon.min_fire_res = min_value
-                            weapon.max_fire_res = max_value
-                        if keyword == 'Wisdom':
-                            weapon.min_wisdom = min_value
-                            weapon.max_wisdom = max_value
-                        if keyword == 'Neutral Damage':
-                            weapon.min_neutral_damage = min_value
-                            weapon.max_neutral_damage = max_value
-                        if keyword == 'Neutral Steal':
-                            weapon.min_neutral_steal = min_value
-                            weapon.max_neutral_steal = max_value
-                        if keyword == 'Neutral Resistance':
-                            weapon.min_neutral_res = min_value
-                            weapon.max_neutral_res = max_value
-                        if keyword == 'Chance':
-                            weapon.min_chance = min_value
-                            weapon.max_chance = max_value
-                        if keyword == 'Water Damage':
-                            weapon.min_water_damage = min_value
-                            weapon.max_water_damage = max_value
-                        if keyword == 'Water Steal':
-                            weapon.min_water_steal = min_value
-                            weapon.max_water_steal = max_value
-                        if keyword == 'Water Resistance':
-                            weapon.min_water_Res = min_value
-                            weapon.max_water_Res = max_value
-                        if keyword == 'Damage':
-                            weapon.min_damage = min_value
-                            weapon.max_damage = max_value
-                        if keyword == 'AP':
-                            weapon.min_ap = min_value
-                            weapon.max_ap = max_value
-                        if keyword == 'AP Parry':
-                            weapon.min_ap_parry = min_value
-                            weapon.max_ap_parry = max_value
-                        if keyword == 'AP Reduction':
-                            weapon.min_ap_reduction = min_value
-                            weapon.max_ap_reduction = max_value
-                        if keyword == 'Hunting Weapon':
-                            weapon.is_hunting_weapon = True
-                        if keyword == 'Summons':
-                            weapon.min_summons = min_value
-                            weapon.max_summons = max_value
-                        if keyword == 'MP':
-                            weapon.min_mp = min_value
-                            weapon.max_mp = max_value
-                        if keyword == 'MP Parry':
-                            weapon.min_mp_parry = min_value
-                            weapon.max_mp_parry = max_value
-                        if keyword == 'MP Reduction':
-                            weapon.min_mp_reduction = min_value
-                            weapon.max_mp_reduction = max_value
-                        if keyword == 'Dodge':
-                            weapon.min_dodge = min_value
-                            weapon.max_dodge = max_value
-                        if keyword == 'Heals':
-                            weapon.min_heals = min_value
-                            weapon.max_heals = max_value
-                        if keyword == 'Initiative':
-                            weapon.min_initiative = min_value
-                            weapon.max_initiative = max_value
-                        if keyword == 'Lock':
-                            weapon.min_lock = min_value
-                            weapon.max_lock = max_value
-                        if keyword == 'Range':
-                            weapon.min_range = min_value
-                            weapon.max_range = max_value
-                        if keyword == 'Prospecting':
-                            weapon.min_prospecting = min_value
-                            weapon.max_prospecting = max_value
-                        if keyword == 'Pushaback Damage':
-                            weapon.min_pushback_damage = min_value
-                            weapon.max_pushback_damage = max_value
-                        if keyword == 'Pushback Resistance':
-                            weapon.min_pushback_res = min_value
-                            weapon.max_pushback_res = max_value
-                        if keyword == 'Power':
-                            weapon.min_power = min_value
-                            weapon.max_power = max_value
-                        if keyword == 'Power (traps)':
-                            weapon.min_trap_power = min_value
-                            weapon.max_trap_power = max_value
-                        if keyword == 'Trap Damage':
-                            weapon.min_trap_damage = min_value
-                            weapon.max_trap_damage = max_value
-                        if keyword == 'kamas':
-                            weapon.min_steals_kamas = min_value
-                            weapon.max_steals_kamas = max_value
-                        if keyword == '(Neutral damage)':
-                            weapon.min_attack_neutral_damage = min_value
-                            weapon.max_attack_neutral_damage = max_value
-                        if keyword == '(Fire damage)':
-                            weapon.min_attack_fire_damage = min_value
-                            weapon.max_attack_fire_damage = max_value
-                        if keyword == '(Water damage)':
-                            weapon.min_attack_water_damage = min_value
-                            weapon.max_attack_water_damage = max_value
-                        if keyword == '(Earth damage)':
-                            weapon.min_attack_earth_damage= min_value
-                            weapon.max_attack_earth_damage = max_value
-                        if keyword == '(Air damage)':
-                            weapon.min_attack_air_damage = min_value
-                            weapon.max_attack_air_damage = max_value
-                        if keyword == '(Neutral steal)':
-                            weapon.min_attack_neutral_steal = min_value
-                            weapon.max_attack_neutral_steal = max_value
-                        if keyword == '(Fire steal)':
-                            weapon.min_attack_fire_steal = min_value
-                            weapon.max_attack_fire_steal = max_value
-                        if keyword == '(Water steal)':
-                            weapon.min_attack_water_steal = min_value
-                            weapon.max_attack_water_steal = max_value
-                        if keyword == '(Earth steal)':
-                            weapon.min_attack_earth_steal = min_value
-                            weapon.max_attack_earth_steal = max_value
-                        if keyword == '(Air steal)':
-                            weapon.min_attack_air_steal = min_value
-                            weapon.max_attack_air_steal = max_value
-                        if keyword == '(HP restored)':
-                            weapon.min_attack_hp_steal = min_value
-                            weapon.max_attack_hp_steal = max_value
+                        if keyword != 'Hunting weapon':
+                            setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
+                        elif keyword == 'Hunting weapon':
+                            setattr(weapon, self.keywords[keyword], True)
                     recipe = self.get_recipe(soup, recipe)
                     weapon.recipe = recipe
                     self.save_image(equipment_image_link, weapon.name)
