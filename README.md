@@ -40,8 +40,8 @@ I really enjoy Dofus as a game. I think the artwork is awesome and the gameplay 
   - [x] Effects
     - [x] Basic Effects (damage, crit, resistance, etc)
     - [ ] Class Effects
-  - [ ] Conditions
-  - [ ] Characteristics
+  - [x] Conditions (i.e. strength > 300)
+  - [x] Characteristics
   - [x] Recipe
 - [ ] Pets
   - [ ] Basic Info
