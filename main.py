@@ -93,7 +93,7 @@ def scrape_professions():
     start_scraping(profession_url='/en/mmorpg/encyclopedia/professions?page=')
 
 def scrape_equipment():
-    start_scraping('equipment_log.txt',equipment_url='/en/mmorpg/encyclopedia/equipment?page=')
+    start_scraping('equipment_log.txt',equipment_url='/en/mmorpg/encyclopedia/equipment?sort=3A&page=')
     for url, reason in equipmentscraper.failed_urls.items():
         write_to_log('equipment_log.txt', f'{url}: {reason}\n')
     for i in range(0,5):
@@ -102,7 +102,7 @@ def scrape_equipment():
         write_to_log('equipment_log.txt', f'{url}: {reason}\n')
 
 def scrape_weapons():
-    start_scraping('weapon_log.txt',weapon_url='/en/mmorpg/encyclopedia/weapons?page=')
+    start_scraping('weapon_log.txt',weapon_url='/en/mmorpg/encyclopedia/weapons?sort=3A&page=')
     for url, reason in weaponscraper.failed_urls.items():
         write_to_log('weapon_log.txt', f'{url}: {reason}\n')
     for i in range(0,5):

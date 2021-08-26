@@ -4,6 +4,7 @@ from .scraper import Scraper
 from models.monster import Monster
 from helpers import db
 from sqlalchemy import exists
+from psycopg2.extras import NumericRange
 import time
 
 class Monsterscraper(Scraper):
@@ -45,6 +46,10 @@ class Monsterscraper(Scraper):
             end = begin
         return (begin,end)
 
+    def get_numeric_range(min,max):
+        range = NumericRange(lower = min, upper=max, bounds='[]', empty=False)
+        return range
+    
     def get_family(self,soup):
         family = soup.find('div', {'class': 'col-xs-8 ak-encyclo-detail-type'})
         family = family.findChild('span', recursive=False)
@@ -78,25 +83,17 @@ class Monsterscraper(Scraper):
                     monster = Monster(
                         id = id,
                         name=name,
-                        minlevel=minLevel,
-                        maxlevel=maxLevel,
-                        minmp=minMp,
-                        maxmp=maxMp,
-                        minap=minAp,
-                        maxap=maxAp,
                         family=family,
-                        minhp=minHp,
-                        maxhp=maxHp,
-                        minearthres=minEarthRes,
-                        maxearthres=maxEarthRes,
-                        minwaterres=minWaterRes,
-                        maxwaterres=maxWaterRes,
-                        minfireres=minFireRes,
-                        maxfireres=maxFireRes,
-                        minairres=minAirRes,
-                        maxairres=maxAirRes,
-                        minneutralres=minNeutralRes,
-                        maxneutralres=maxNeutralRes)
+                        level = self.get_numeric_range(minLevel,maxLevel),
+                        mp = self.get_numeric_range(minMp,maxMp),
+                        ap = self.get_numeric_range(minAp,maxAp),
+                        hp = self.get_numeric_range(minHp,maxHp),
+                        waterres = self.get_numeric_range(minWaterRes,maxWaterRes),
+                        fireres = self.get_numeric_range(minFireRes,maxFireRes),
+                        earthres = self.get_numeric_range(minEarthRes,maxEarthRes),
+                        airres = self.get_numeric_range(minAirRes,maxAirRes),
+                        neutralres = self.get_numeric_range(minNeutralRes,maxNeutralRes)
+                    )
                     driver.quit()
                     return monster
                 except Exception as e:
