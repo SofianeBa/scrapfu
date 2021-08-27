@@ -22,7 +22,7 @@ monsterscraper = Monsterscraper(blob_service_client, dr, options, url_queue)
 resourcescraper = Resourcescraper(blob_service_client, dr, options, url_queue)
 professionscraper = Professionscraper(blob_service_client, dr, options, url_queue)
 equipmentscraper = Equipmentscraper(blob_service_client, dr, options, url_queue)
-weaponscraper = Weaponscraper(blob_service_client, dr, options, url_queue)
+weaponscraper = Weaponscraper(blob_service_client, dr, options, url_queue, update = True)
 
 
 def write_to_log(file_name, msg):

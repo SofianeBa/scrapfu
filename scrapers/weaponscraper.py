@@ -13,7 +13,7 @@ from math import floor
 from sqlalchemy import exists
 
 class Weaponscraper(Scraper):
-    def __init__(self,blob_service_client, driver, options, queue):
+    def __init__(self,blob_service_client, driver, options, queue, update):
         super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
         self.keywords = {
         '% Air Resistance': 'percent_air_res','% Earth Resistance': 'percent_earth_res','% Fire Resistance': 'percent_fire_res',
@@ -33,6 +33,7 @@ class Weaponscraper(Scraper):
         self.found_keywords = []
         self.Session = db.create_session()
         self.session = self.Session()
+        self.update = update
 
     def find_effect_fields(self, soup):
             try:
@@ -181,10 +182,17 @@ class Weaponscraper(Scraper):
                 return str.strip(content.text)
 
     def get_weapon_info(self, url):
-        weapon = Weapon()
-        recipe = Recipe()
+        
         id = self.get_id(url)
-        if not self.session.query(exists().where(Weapon.id == id)).scalar():
+        weapon_exists = self.session.query(exists().where(Weapon.id == id)).scalar()
+
+        if weapon_exists and self.update:
+            weapon = self.session.execute(select(Weapon).where(Weapon.id == id)).scalar()
+        else:
+            weapon = Weapon()
+            recipe = Recipe()
+    
+        if not weapon_exists or (weapon_exists and self.update):
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
             driver.get(url)
@@ -209,18 +217,25 @@ class Weaponscraper(Scraper):
                     scraped_fields = self.scrape_effect_fields(effect_fields)
                     keywords = scraped_fields.keys()
                     for keyword in keywords:
-                        print(keyword)
                         min_value, max_value = scraped_fields[keyword]
+                        if '(' in keyword:
+                            keyword = str.replace(keyword, '(', '[(]')
+                            keyword = str.replace(keyword, ')', '[)]')
                         if keyword != 'Hunting weapon':
                             pass
-                            #setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
+                            setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
                         elif keyword == 'Hunting weapon':
                             setattr(weapon, self.keywords[keyword], True)
-                    recipe = self.get_recipe(soup, recipe)
-                    weapon.recipe = recipe
-                    self.save_image(equipment_image_link, weapon.name)
-                    driver.quit()
-                    return weapon
+                    if not self.update:
+                        recipe = self.get_recipe(soup, recipe)
+                        weapon.recipe = recipe
+                        self.save_image(equipment_image_link, weapon.name)
+                        driver.quit()
+                        return weapon
+                    elif self.update: 
+                        self.session.commit()
+                        driver.quit()
+                        return None
                 except Exception as e: 
                     driver.quit()
                     self.failed_urls[url] = e
