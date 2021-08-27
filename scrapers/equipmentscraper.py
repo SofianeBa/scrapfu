@@ -44,6 +44,11 @@ class Equipmentscraper(Scraper):
             print(e)
             return None
 
+    def reverse_min_max_values(self, min, max):
+        new_min = max
+        new_max = min
+        return (new_min, new_max)
+
     def get_min_max_values(self, effect_field):
         rangeText = str.split(effect_field, sep='to')
         if len(rangeText) > 1:
@@ -57,6 +62,8 @@ class Equipmentscraper(Scraper):
                 end = int(str.strip(end))
             except:
                 end = begin
+            if begin > end:
+                begin, end = self.reverse_min_max_values(begin, end)
         else:
             begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
             begin_is_int = isinstance(begin, int)

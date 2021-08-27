@@ -25,10 +25,10 @@ class Weaponscraper(Scraper):
         'Neutral Resistance': 'neutral_res','Chance': 'chance','Water Damage': 'water_damage','Water Resistance': 'water_Res','Damage': 'damage',
         'AP': 'ap','AP Parry': 'ap_parry','AP Reduction': 'ap_reduction','Hunting weapon': 'is_hunting_weapon','Summons': 'summons','MP': 'mp','MP Parry': 'mp_parry',
         'MP Reduction': 'mp_reduction','Dodge': 'dodge','Heals': 'heals','Initiative': 'initiative','Lock': 'lock','Range': 'range','Prospecting': 'prospecting',
-        'Pushaback Damage': 'pushback_damage','Pushback Resistance': 'pushback_res','Power': 'power','Power (traps)': 'trap_power','Trap Damage': 'trap_damage',
-        'kamas': 'steals_kamas','(Neutral damage)': 'attack_neutral_damage','(Fire damage)': 'attack_fire_damage','(Water damage)': 'attack_water_damage',
-        '(Earth damage)': 'attack_earth_damage','(Air damage)': 'attack_air_damage','(Neutral steal)': 'attack_neutral_steal','(Fire steal)': 'attack_fire_steal',
-        '(Water steal)': 'attack_water_steal','(Earth steal)': 'attack_earth_steal','(Air steal)': 'attack_air_steal','(HP restored)': 'attack_hp_steal'
+        'Pushaback Damage': 'pushback_damage','Pushback Resistance': 'pushback_res','Power': 'power','Power [(]traps[)]': 'trap_power','Trap Damage': 'trap_damage',
+        'kamas': 'steals_kamas','[(]Neutral damage[)]': 'attack_neutral_damage','[(]Fire damage[)]': 'attack_fire_damage','[(]Water damage[)]': 'attack_water_damage',
+        '[(]Earth damage[)]': 'attack_earth_damage','[(]Air damage[)]': 'attack_air_damage','[(]Neutral steal[)]': 'attack_neutral_steal','[(]Fire steal[)]': 'attack_fire_steal',
+        '[(]Water steal[)]': 'attack_water_steal','[(]Earth steal[)]': 'attack_earth_steal','[(]Air steal[)]': 'attack_air_steal',"[(]HP restored[)]": 'attack_hp_steal'
         }
         self.found_keywords = []
         self.Session = db.create_session()
@@ -46,6 +46,11 @@ class Weaponscraper(Scraper):
                 print(e)
                 return None
 
+    def reverse_min_max_values(self, min, max):
+        new_min = max
+        new_max = min
+        return (new_min, new_max)
+
     def get_min_max_values(self, effect_field):
         rangeText = str.split(effect_field, sep='to')
         if len(rangeText) > 1:
@@ -59,6 +64,8 @@ class Weaponscraper(Scraper):
                 end = int(str.strip(end))
             except:
                 end = begin
+            if begin > end:
+              begin, end = self.reverse_min_max_values(begin,end)
         else:
             begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
             begin_is_int = isinstance(begin, int)
@@ -202,9 +209,11 @@ class Weaponscraper(Scraper):
                     scraped_fields = self.scrape_effect_fields(effect_fields)
                     keywords = scraped_fields.keys()
                     for keyword in keywords:
+                        print(keyword)
                         min_value, max_value = scraped_fields[keyword]
                         if keyword != 'Hunting weapon':
-                            setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
+                            pass
+                            #setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
                         elif keyword == 'Hunting weapon':
                             setattr(weapon, self.keywords[keyword], True)
                     recipe = self.get_recipe(soup, recipe)
