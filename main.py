@@ -113,5 +113,4 @@ def scrape_weapons():
 #scrape_monsters()
 #scrape_resources()
 #scrape_equipment()
-#scrape_weapons()
-weapn = weaponscraper.get_weapon_info('https://www.dofus.com/en/mmorpg/encyclopedia/weapons/19096-forfut-hammer')
+scrape_weapons()

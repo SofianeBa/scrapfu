@@ -200,7 +200,7 @@ class Weaponscraper(Scraper):
 
         if not weapon_exists and not self.update:
             weapon = Weapon()
-            weapon = Recipe()
+            recipe = Recipe()
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
             driver.get(url)
@@ -238,36 +238,42 @@ class Weaponscraper(Scraper):
                 self.skipped_urls[url] = "404 found. Skipping"
                 driver.quit()
         elif weapon_exists and self.update:
-            print('hoozah!')
-            weapon = self.session.get(Weapon, id)
+            Session = db.create_session()
+            update_session = Session()
+            weapon = update_session.get(Weapon, id)
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
             driver.get(url)
             soup = BeautifulSoup(driver.page_source, 'lxml')
-            try:
-                weapon.id = id
-                weapon.type = self.get_type(soup)
-                weapon.level = self.get_level(soup)
-                weapon.name =  self.get_name(soup)
-                characteristics_divs = self.find_characteristics(soup)
-                weapon.ap_cost = self.get_characteristic(characteristics_divs, 'ap_cost')
-                weapon.use_per_turn = self.get_characteristic(characteristics_divs, 'use_per_turn')
-                weapon.crit_hit_chance = self.get_characteristic(characteristics_divs, 'crit_hit_chance')
-                weapon.crit_hit_bonus = self.get_characteristic(characteristics_divs, 'crit_hit_bonus')
-                min_effective_range, max_effective_range = self.get_characteristic(characteristics_divs, 'effective_range')
-                weapon.effective_range = NumericRange(lower=min_effective_range,upper=max_effective_range,bounds='[]', empty=False)
-                weapon.conditions = self.get_conditions(soup)
-                weapon.description = self.get_description(soup)
-                effect_fields = self.find_effect_fields(soup)
-                scraped_fields = self.scrape_effect_fields(effect_fields)
-                keywords = scraped_fields.keys()
-                self.set_found_attributes(weapon,keywords,scraped_fields)
+            if soup.find('div', {'class': 'ak-404'}) == None:
+                try:
+                    weapon.id = id
+                    weapon.type = self.get_type(soup)
+                    weapon.level = self.get_level(soup)
+                    weapon.name =  self.get_name(soup)
+                    characteristics_divs = self.find_characteristics(soup)
+                    weapon.ap_cost = self.get_characteristic(characteristics_divs, 'ap_cost')
+                    weapon.use_per_turn = self.get_characteristic(characteristics_divs, 'use_per_turn')
+                    weapon.crit_hit_chance = self.get_characteristic(characteristics_divs, 'crit_hit_chance')
+                    weapon.crit_hit_bonus = self.get_characteristic(characteristics_divs, 'crit_hit_bonus')
+                    min_effective_range, max_effective_range = self.get_characteristic(characteristics_divs, 'effective_range')
+                    weapon.effective_range = NumericRange(lower=min_effective_range,upper=max_effective_range,bounds='[]', empty=False)
+                    weapon.conditions = self.get_conditions(soup)
+                    weapon.description = self.get_description(soup)
+                    effect_fields = self.find_effect_fields(soup)
+                    scraped_fields = self.scrape_effect_fields(effect_fields)
+                    keywords = scraped_fields.keys()
+                    self.set_found_attributes(weapon,keywords,scraped_fields)
+                    driver.quit()
+                except Exception as e: 
+                    driver.quit()
+                    self.failed_urls[url] = e
+                    print(e)
+            else:
+                self.skipped_urls[url] = "404 found. Skipping"
                 driver.quit()
-            except Exception as e: 
-                driver.quit()
-                self.failed_urls[url] = e
-                print(e)
-            self.session.commit()
+            update_session.commit()
+            update_session.close()
         else:
             self.skipped_urls[url] = "Weapon found in db. Skipping"
             return None
