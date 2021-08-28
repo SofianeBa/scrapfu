@@ -181,18 +181,26 @@ class Weaponscraper(Scraper):
                 content = sibling.find('div', {'class':'ak-title'})
                 return str.strip(content.text)
 
+    def set_found_attributes(self,weapon, keywords, scraped_fields):
+        for keyword in keywords:
+            min_value, max_value = scraped_fields[keyword]
+            if '(' in keyword:
+                keyword = str.replace(keyword, '(', '[(]')
+                keyword = str.replace(keyword, ')', '[)]')
+            if keyword != 'Hunting weapon':
+                pass
+                setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
+            elif keyword == 'Hunting weapon':
+                setattr(weapon, self.keywords[keyword], True)
+
     def get_weapon_info(self, url):
         
         id = self.get_id(url)
         weapon_exists = self.session.query(exists().where(Weapon.id == id)).scalar()
 
-        if weapon_exists and self.update:
-            weapon = self.session.execute(select(Weapon).where(Weapon.id == id)).scalar()
-        else:
+        if not weapon_exists and not self.update:
             weapon = Weapon()
-            recipe = Recipe()
-    
-        if not weapon_exists or (weapon_exists and self.update):
+            weapon = Recipe()
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
             driver.get(url)
@@ -216,26 +224,12 @@ class Weaponscraper(Scraper):
                     effect_fields = self.find_effect_fields(soup)
                     scraped_fields = self.scrape_effect_fields(effect_fields)
                     keywords = scraped_fields.keys()
-                    for keyword in keywords:
-                        min_value, max_value = scraped_fields[keyword]
-                        if '(' in keyword:
-                            keyword = str.replace(keyword, '(', '[(]')
-                            keyword = str.replace(keyword, ')', '[)]')
-                        if keyword != 'Hunting weapon':
-                            pass
-                            setattr(weapon, self.keywords[keyword], NumericRange(lower=min_value,upper=max_value,bounds='[]',empty=False))
-                        elif keyword == 'Hunting weapon':
-                            setattr(weapon, self.keywords[keyword], True)
-                    if not self.update:
-                        recipe = self.get_recipe(soup, recipe)
-                        weapon.recipe = recipe
-                        self.save_image(equipment_image_link, weapon.name)
-                        driver.quit()
-                        return weapon
-                    elif self.update: 
-                        self.session.commit()
-                        driver.quit()
-                        return None
+                    self.set_found_attributes(weapon,keywords,scraped_fields)
+                    recipe = self.get_recipe(soup, recipe)
+                    weapon.recipe = recipe
+                    self.save_image(equipment_image_link, weapon.name)
+                    driver.quit()
+                    return weapon
                 except Exception as e: 
                     driver.quit()
                     self.failed_urls[url] = e
@@ -243,6 +237,37 @@ class Weaponscraper(Scraper):
             else:
                 self.skipped_urls[url] = "404 found. Skipping"
                 driver.quit()
+        elif weapon_exists and self.update:
+            print('hoozah!')
+            weapon = self.session.get(Weapon, id)
+            time.sleep(5)
+            driver = self.dr.create_driver(self.options)
+            driver.get(url)
+            soup = BeautifulSoup(driver.page_source, 'lxml')
+            try:
+                weapon.id = id
+                weapon.type = self.get_type(soup)
+                weapon.level = self.get_level(soup)
+                weapon.name =  self.get_name(soup)
+                characteristics_divs = self.find_characteristics(soup)
+                weapon.ap_cost = self.get_characteristic(characteristics_divs, 'ap_cost')
+                weapon.use_per_turn = self.get_characteristic(characteristics_divs, 'use_per_turn')
+                weapon.crit_hit_chance = self.get_characteristic(characteristics_divs, 'crit_hit_chance')
+                weapon.crit_hit_bonus = self.get_characteristic(characteristics_divs, 'crit_hit_bonus')
+                min_effective_range, max_effective_range = self.get_characteristic(characteristics_divs, 'effective_range')
+                weapon.effective_range = NumericRange(lower=min_effective_range,upper=max_effective_range,bounds='[]', empty=False)
+                weapon.conditions = self.get_conditions(soup)
+                weapon.description = self.get_description(soup)
+                effect_fields = self.find_effect_fields(soup)
+                scraped_fields = self.scrape_effect_fields(effect_fields)
+                keywords = scraped_fields.keys()
+                self.set_found_attributes(weapon,keywords,scraped_fields)
+                driver.quit()
+            except Exception as e: 
+                driver.quit()
+                self.failed_urls[url] = e
+                print(e)
+            self.session.commit()
         else:
             self.skipped_urls[url] = "Weapon found in db. Skipping"
             return None
