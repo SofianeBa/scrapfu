@@ -28,11 +28,14 @@ class Consumablescraper(Scraper):
     def find_effect_fields(self, soup):
             try:
                 titles = soup.findAll('div', {'class': 'ak-panel-title'})
-                for title in titles:
-                    if str.strip(title.text) == 'Effects':
-                        effects_parent = title.parent
-                        effects_list = effects_parent.findAll('div',{'class':'ak-title'})
-                        return effects_list
+                if titles != None:
+                    for title in titles:
+                        if str.strip(title.text) == 'Effects':
+                            effects_parent = title.parent
+                            effects_list = effects_parent.findAll('div',{'class':'ak-title'})
+                            return effects_list
+                else: 
+                    return None
             except Exception as e:
                 print(e)
                 return None
@@ -152,8 +155,10 @@ class Consumablescraper(Scraper):
                     consumable.conditions = self.get_conditions(soup)
                     
                     found_effects = self.find_effect_fields(soup)
-                    scraped_values = self.scrape_effect_fields(found_effects)
-                    self.set_found_attributes(consumable, scraped_values)
+                    
+                    if found_effects != None:
+                        scraped_values = self.scrape_effect_fields(found_effects)
+                        self.set_found_attributes(consumable, scraped_values)
 
                     recipe = self.get_recipe(soup, recipe)
                     consumable.recipe = recipe
