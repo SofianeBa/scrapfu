@@ -1,4 +1,3 @@
-from sys import meta_path
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy import Column, String

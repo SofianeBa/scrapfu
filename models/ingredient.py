@@ -1,5 +1,3 @@
-
-from sqlalchemy.sql.expression import null
 from sqlalchemy.types import Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy import ForeignKey, Column
@@ -13,8 +11,10 @@ class Ingredient(Base):
     resource_id = Column(ForeignKey('resource.id'), nullable=True)
     equipment_id = Column(ForeignKey('equipment.id'), nullable=True)
     weapon_id = Column(ForeignKey('weapon.id'), nullable=True)
+    consumable_id = Column(ForeignKey('consumable.id'), nullable = True)
     quantity = Column(Integer, nullable=False)
     recipe = relationship('Recipe',back_populates='ingredients')
     resource = relationship('Resource',back_populates='recipes')
     equipment = relationship('Equipment', back_populates='ingredients')
     weapon = relationship('Weapon', back_populates='ingredients')
+    consumable = relationship('Consumable', back_populates='ingredients')
