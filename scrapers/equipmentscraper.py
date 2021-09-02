@@ -6,6 +6,8 @@ import re
 from sqlalchemy import exists
 from bs4 import BeautifulSoup
 from models.equipment import Equipment
+from models.resource import Resource
+from models.consumable import Consumable
 from models.recipe import Recipe
 from models.ingredient import Ingredient
 from models.profession import Profession
@@ -121,10 +123,14 @@ class Equipmentscraper(Scraper):
                 ingredient_id_tag = ingredient_row.find('a')
                 ingredient_id = self.get_id(ingredient_id_tag['href'])
                 is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
-                if not is_equipment_id:
+                is_resource_id = self.session.query(exists().where(Resource.id == ingredient_id)).scalar()
+                is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
+                if is_resource_id:
                     ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
-                else:
+                elif is_equipment_id:
                     ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
+                elif is_consumable_id:
+                    ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
                 recipe.ingredients.append(ingredient)
             return recipe
         else:

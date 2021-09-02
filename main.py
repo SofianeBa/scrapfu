@@ -127,6 +127,6 @@ def scrape_consumables():
 
 #scrape_monsters()
 #scrape_resources()
-#scrape_consumables()
+scrape_consumables()
 #scrape_equipment()
 #scrape_weapons()

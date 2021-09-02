@@ -14,7 +14,7 @@ class Recipe(Base):
     #identification
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     level = Column(Integer, nullable=False)
-    profession = Column(Integer, ForeignKey('profession.id'), nullable = False)
+    profession_id = Column(Integer, ForeignKey('profession.id'), nullable = True)
     equipment_id = Column(Integer, ForeignKey('equipment.id'), nullable=True)
     weapon_id = Column(Integer, ForeignKey('weapon.id'), nullable = True)
     consumable_id = Column(Integer, ForeignKey('consumable.id'), nullable = True)

@@ -1,6 +1,7 @@
 from .scraper import Scraper
 from helpers import db
 from models.consumable import Consumable
+from models.resource import Resource
 from models.recipe import Recipe
 from bs4 import BeautifulSoup
 import time, re
@@ -104,16 +105,24 @@ class Consumablescraper(Scraper):
                 profession_section = recipe_section.find('div', {'class':'ak-panel-intro'})
                 profession_values = str.split(profession_section.text, 'Level')
                 profession_level = str.strip(profession_values[1])
-                profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
+                try:
+                    profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
+                    recipe.profession = profession_result.id
+                except:
+                    print('Profession not found. Probably a fairywork')
                 ingredient_list = recipe_section.findAll('div', {'class': 'ak-list-element'})
                 recipe.level = profession_level
-                recipe.profession = profession_result.id
                 for ingredient_row in ingredient_list:
                     amount_tag = ingredient_row.find('div', {'class':'ak-front'})
                     amount = ''.join(re.findall('[0-9]',amount_tag.text))
                     ingredient_id_tag = ingredient_row.find('a')
                     ingredient_id = self.get_id(ingredient_id_tag['href'])
-                    ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
+                    is_resource_id = self.session.query(exists().where(Resource.id == ingredient_id)).scalar()
+                    is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
+                    if is_resource_id:
+                        ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
+                    elif is_consumable_id:
+                        ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
                     recipe.ingredients.append(ingredient)
                 return recipe
             else:
