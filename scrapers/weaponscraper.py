@@ -4,7 +4,7 @@ import time
 import re
 from models.profession import Profession
 from models.ingredient import Ingredient
-from models.resource import Resource
+from models.equipment import Equipment
 from models.consumable import Consumable
 from models.weapon import Weapon
 from models.recipe import Recipe
@@ -15,7 +15,7 @@ from math import floor
 from sqlalchemy import exists
 
 class Weaponscraper(Scraper):
-    def __init__(self,blob_service_client, driver, options, queue, update):
+    def __init__(self,blob_service_client, driver, options, queue, update=False):
         super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
         self.keywords = {
         '% Air Resistance': 'percent_air_res','% Earth Resistance': 'percent_earth_res','% Fire Resistance': 'percent_fire_res',
@@ -119,24 +119,30 @@ class Weaponscraper(Scraper):
             profession_section = recipe_section.find('div', {'class':'ak-panel-intro'})
             profession_values = str.split(profession_section.text, 'Level')
             profession_level = str.strip(profession_values[1])
-            profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
+            try:    
+                profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
+                recipe.profession = profession_result.id
+            except:
+                print('no profession found. probably a level based recipe')
+                recipe.profession = None
             ingredient_list = recipe_section.findAll('div', {'class': 'ak-list-element'})
             recipe.level = profession_level
-            recipe.profession = profession_result.id
             for ingredient_row in ingredient_list:
                 amount_tag = ingredient_row.find('div', {'class':'ak-front'})
                 amount = ''.join(re.findall('[0-9]',amount_tag.text))
                 ingredient_id_tag = ingredient_row.find('a')
                 ingredient_id = self.get_id(ingredient_id_tag['href'])
+                is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
                 is_weapon_id = self.session.query(exists().where(Weapon.id == ingredient_id)).scalar()
-                is_resource_id = self.session.query(exists().where(Resource.id == ingredient_id)).scalar()
                 is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
-                if is_resource_id:
-                    ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
-                elif is_weapon_id:
+                if is_weapon_id:
                     ingredient = Ingredient(weapon_id=ingredient_id, quantity=amount)
+                elif is_equipment_id :
+                    ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
                 elif is_consumable_id:
                     ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
+                else:
+                    ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
                 recipe.ingredients.append(ingredient)
             return recipe
         else:

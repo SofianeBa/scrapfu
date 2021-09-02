@@ -22,7 +22,7 @@ monsterscraper = Monsterscraper(blob_service_client, dr, options, url_queue)
 resourcescraper = Resourcescraper(blob_service_client, dr, options, url_queue)
 professionscraper = Professionscraper(blob_service_client, dr, options, url_queue)
 equipmentscraper = Equipmentscraper(blob_service_client, dr, options, url_queue)
-weaponscraper = Weaponscraper(blob_service_client, dr, options, url_queue, update = True)
+weaponscraper = Weaponscraper(blob_service_client, dr, options, url_queue)
 consumablescraper = Consumablescraper(blob_service_client, dr, options, url_queue)
 
 
@@ -127,6 +127,6 @@ def scrape_consumables():
 
 #scrape_monsters()
 #scrape_resources()
-scrape_consumables()
+#scrape_consumables()
 #scrape_equipment()
 #scrape_weapons()

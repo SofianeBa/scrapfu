@@ -117,11 +117,10 @@ class Consumablescraper(Scraper):
                     amount = ''.join(re.findall('[0-9]',amount_tag.text))
                     ingredient_id_tag = ingredient_row.find('a')
                     ingredient_id = self.get_id(ingredient_id_tag['href'])
-                    is_resource_id = self.session.query(exists().where(Resource.id == ingredient_id)).scalar()
                     is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
-                    if is_resource_id:
+                    if is_consumable_id:
                         ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
-                    elif is_consumable_id:
+                    else:
                         ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
                     recipe.ingredients.append(ingredient)
                 return recipe
