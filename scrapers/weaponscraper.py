@@ -10,13 +10,13 @@ from models.weapon import Weapon
 from models.recipe import Recipe
 from bs4 import BeautifulSoup
 from sqlalchemy import select
-from helpers import db
+#from helpers import db
 from math import floor
 from sqlalchemy import exists
 
 class Weaponscraper(Scraper):
-    def __init__(self,blob_service_client, driver, options, queue, update=False):
-        super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
+    def __init__(self,driver, options, queue, update=False):
+        super().__init__(driver=driver, options=options, queue=queue)
         self.keywords = {
         '% Air Resistance': 'percent_air_res','% Earth Resistance': 'percent_earth_res','% Fire Resistance': 'percent_fire_res',
         '% Neutral Resistance': 'percent_neutral_res','% Water Resistance': 'percent_water_res','% Ranged Resistance': 'percent_ranged_res',
@@ -33,8 +33,8 @@ class Weaponscraper(Scraper):
         '[(]Water steal[)]': 'attack_water_steal','[(]Earth steal[)]': 'attack_earth_steal','[(]Air steal[)]': 'attack_air_steal',"[(]HP restored[)]": 'attack_hp_steal'
         }
         self.found_keywords = []
-        self.Session = db.create_session()
-        self.session = self.Session()
+        #self.Session = db.create_session()
+        #self.session = self.Session()
         self.update = update
 
     def find_effect_fields(self, soup):

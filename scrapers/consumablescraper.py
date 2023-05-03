@@ -1,5 +1,5 @@
 from .scraper import Scraper
-from helpers import db
+#from helpers import db
 from models.consumable import Consumable
 from models.resource import Resource
 from models.recipe import Recipe
@@ -10,10 +10,10 @@ from models.ingredient import Ingredient
 from models.profession import Profession
 
 class Consumablescraper(Scraper):
-    def __init__(self, blob_service_client, driver, options, queue):
-        super().__init__(blob_service_client, driver, options, queue)
-        Session = db.create_session()
-        self.session = Session()
+    def __init__(self, driver, options, queue):
+        super().__init__(driver, options, queue)
+        #Session = db.create_session()
+        #self.session = Session()
         self.keywords = {
             'Agility':'agility', 
             'Chance':'chance' ,

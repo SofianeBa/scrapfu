@@ -4,8 +4,8 @@ import time
 from models.profession import Profession
 
 class Professionscraper(Scraper):
-    def __init__(self, blob_service_client, driver, options, queue):
-        super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
+    def __init__(self, driver, options, queue):
+        super().__init__(driver=driver, options=options, queue=queue)
 
     def get_link(self, url, tag,pages):
         #need to find a better way to determine the amount of pages in the table. 

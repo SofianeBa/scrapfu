@@ -1,7 +1,7 @@
 import sys
 from selenium import webdriver
 
-base_url = "https://www.dofus.com"
+base_url = "https://www.wakfu.com"
 
 def create_driver(options):
     if sys.platform == 'win32':

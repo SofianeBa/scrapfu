@@ -1,6 +1,6 @@
 from .scraper import Scraper
 import time
-from helpers import db
+#from helpers import db
 from psycopg2.extras import NumericRange
 import re
 from sqlalchemy import exists
@@ -15,30 +15,38 @@ from sqlalchemy import select
 
 
 class Equipmentscraper(Scraper):
-    def __init__(self,blob_service_client, driver, options, queue):
-        super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
+    def __init__(self, driver, options, queue):
+        super().__init__(driver=driver, options=options, queue=queue)
         self.keywords = {
-            'AP Parry': 'ap_parry','AP Reduction': 'ap_reduction',"MP Parry": 'mp_parry',
-            "MP Reduction": 'mp_reduction','Air Damage': 'air_damage','Water Damage': 'water_damage',
-            'Fire Damage': 'fire_damage', "Earth Damage": 'earth_damage',"Neutral Damage": 'neutral_damage',
-            "Trap Damage": 'trap_damage',"Pushback Damage": 'pushback_damage',"Critical Damage": 'critical_damage',
-            "Damage Reflected": 'damage_reflected',"Critical Resistance": 'critical_res',"Pushback Resistance": 'pushback_res', 
-            "% Neutral Resistance": 'percent_neutral_res',"% Critical": 'percent_critical',"% Melee Resistance": 'percent_melee_res',
-            "% Earth Resistance": 'percent_earth_res',"% Fire resistance": 'percent_fire_res',"% Air Resistance": 'percent_air_res',
-            "% Water Resistance": 'percent_water_res',"% Ranged Resistance": 'percent_ranged_res',"% Ranged Damage": 'percent_ranged_damage', 
-            "% Spell Damage": 'percent_spell_damage',"% Weapon Damage": 'percent_weapon_damage',
-            "% Melee Damage": 'percent_melee_damage',"Strength": 'strength', 'Intelligence': 'intelligence','Chance': 'chance','Agility': 'agility',"Wisdom": 'wisdom',
-            'Vitality': 'vitality',"Pods": 'pods',"Damage": 'damage',"Dodge": 'dodge',"Heals": 'heals',"Initiative": 'initiative', 
-            "Lock": 'lock', "MP": 'mp','AP': 'ap','Prospecting': 'prospecting',"Summons": 'summons',"Range": 'range' }
+            'PV': 'pv','PA': 'pa','PM': 'pm','PW': 'pw','Portée': 'po','Armure reçue': 'armure_recu',
+            'Armure donnée': 'armure_donne', 'Maîtrise Eau': 'maitrise_eau','Maîtrise Feu': 'maitrise_feu',
+            'Maîtrise Terre': 'maitrise_terre','Maîtrise Air': 'maitrise_air', 'Résistance Feu': 'resistance_feu',
+            'Résistance Eau': 'resistance_eau','Résistance Terre': 'resistance_terre','Résistance Air': 'resistance_air',
+            '% Coup Critique': 'pourcent_critique','% Parade': 'pourcent_parade','Initiative': 'initiative',
+            'Esquive': 'esquive','Tacle': 'tacle','Sagesse': 'sagesse','Prospection': 'prospection','Contrôle': 'controle',
+            'Volonté' :'volonte','Maîtrise Critique': 'maitrise_critique','Résistance Critique': 'resistance_critique',
+            'Maîtrise Dos': 'maitrise_dos', 'Résistance Dos': 'resistance_dos','Maîtrise Mélée': 'maitrise_melee',
+            'Maîtrise Distance': 'maitrise_distance','Maîtrise Monocible': 'maitrise_monocible',
+            'Maîtrise Zone': 'maitrise_zone','Maîtrise Soin': 'maitrise_soin','Maîtrise Berserk': 'maitrise_berserk',
+            'Maîtrise Élémentaire': 'maitrise_elem','Maîtrise sur 1 élément aléatoire': 'maitrise_elem_1',
+            'Maîtrise sur 2 éléments aléatoires': 'maitrise_elem_2','Maîtrise sur 3 éléments aléatoires': 'maitrise_elem_3',
+            'Résistance Élémentaire': 'resistance_elem','Résistance sur 1 élément aléatoire': 'resistance_elem_1',
+            'Résistance sur 2 éléments aléatoires': 'resistance_elem_2', 'Résistance sur 3 éléments aléatoires': 'resistance_elem_3',
+            'Niv. aux sorts élémentaires': 'niv_sort_elem','Niv. aux sorts Air': 'niv_sort_air','Niv. aux sorts Terre': 'niv_sort_terre',
+            'Niv. aux sorts Feu': 'niv_sort_feu', 'Niv. aux sorts Eau': 'niv_sort_eau','% Quantité Récolte en Mineur': 'quantite_recolte_mineur',
+            '% Quantité Récolte en Paysan': 'quantite_recolte_paysan','% Quantité Récolte en Forestier': 'quantite_recolte_forestier',
+            '% Quantité Récolte en Herboriste': 'quantite_recolte_herboriste','% Quantité Récolte en Trappeur': 'quantite_recolte_trappeur',
+            '% Quantité Récolte en Pêcheur': 'quantite_recolte_pêcheur'
+            }
         self.found_keywords = []
-        self.Session = db.create_session()
-        self.session = self.Session()
+        #self.Session = db.create_session()
+        #self.session = self.Session()
 
     def find_effect_fields(self, soup):
         try:
             titles = soup.findAll('div', {'class': 'ak-panel-title'})
             for title in titles:
-                if str.strip(title.text) == 'Effects':
+                if str.strip(title.text) == 'Caractéristiques':
                     effects_parent = title.parent
                     effects_list = effects_parent.findAll('div',{'class':'ak-title'})
                     return effects_list
@@ -81,8 +89,7 @@ class Equipmentscraper(Scraper):
             match = re.search(expression, str.strip(effect_field.text))
             if match:
                 keyword = match.group(0)
-                min_value, max_value = self.get_min_max_values(effect_field.text)
-                scraped_fields[keyword] = (min_value,max_value)
+                scraped_fields[keyword] = (''.join(re.findall('[-,0-9]',effect_field.text)))
         return scraped_fields
 
 
@@ -106,24 +113,30 @@ class Equipmentscraper(Scraper):
                 parent = strong_tag.parent
                 strong_value = parent.find('span')
                 return strong_value.text
+    
+    def get_rarity(self, soup):
+        rarity = soup.find('div',{'class':'ak-object-rarity'})
+        return rarity.findAll('span')[0].text.strip()
 
     def get_recipe(self, soup, recipe):
         recipe_section =  soup.find('div',{'class':'ak-container ak-panel ak-crafts'})
         if recipe_section:
             profession_section = recipe_section.find('div', {'class':'ak-panel-intro'})
-            profession_values = str.split(profession_section.text, 'Level')
+            profession_values = str.split(profession_section.text, 'Niveau')
             profession_level = str.strip(profession_values[1])
-            profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
+            #profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
             ingredient_list = recipe_section.findAll('div', {'class': 'ak-list-element'})
             recipe.level = profession_level
-            recipe.profession = profession_result.id
+            recipe.profession = profession_values
             for ingredient_row in ingredient_list:
                 amount_tag = ingredient_row.find('div', {'class':'ak-front'})
                 amount = ''.join(re.findall('[0-9]',amount_tag.text))
                 ingredient_id_tag = ingredient_row.find('a')
                 ingredient_id = self.get_id(ingredient_id_tag['href'])
-                is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
-                is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
+                #is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
+                #is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
+                is_equipment_id = False
+                is_consumable_id = False
                 if is_equipment_id:
                     ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
                 elif is_consumable_id:
@@ -135,9 +148,32 @@ class Equipmentscraper(Scraper):
         else:
             return None
             
+
+    def get_dropped_by(self, soup):
+        monster_key_drop_pairings = []
+        titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
+        for title in titles:
+            text = str.strip(title.text)
+            if text == 'Peut être obtenu sur':
+                content = title.find_next_sibling('div')
+                columns = content.findAll('div',{'class':'ak-column ak-container col-xs-12 col-md-6'})
+                for column in columns:
+                    link_raw = column.find('a')
+                    monster_name = column.find('div', {'class':'ak-title'})
+                    if str.strip(monster_name.text):
+                        link_raw = str.split(link_raw['href'],'-')[0]
+                        drop_rate_raw = column.find('div',{'class':'ak-aside'})
+                        drop_rate_raw = drop_rate_raw.text
+                        drop_rate = ''.join(re.findall('[.,0-9]',drop_rate_raw))
+                        monster_pk = ''.join(re.findall('[0-9]', link_raw))
+                        pairing = {'id': monster_pk, 'drop_rate': drop_rate}
+                        monster_key_drop_pairings.append(pairing)
+        return monster_key_drop_pairings
+    
     def get_equipment_info(self, url):
         id = self.get_id(url)
-        equipment_exists = self.session.query(exists().where(Equipment.id == id)).scalar()
+        equipment_exists = False
+        #equipment_exists = self.session.query(exists().where(Equipment.id == id)).scalar()
         if not equipment_exists:
             equipment = Equipment()
             recipe = Recipe()
@@ -151,22 +187,25 @@ class Equipmentscraper(Scraper):
                     equipment.type = self.get_type(soup)
                     equipment.level = self.get_level(soup)
                     equipment.name =  self.get_name(soup)
+                    equipment.rarity = self.get_rarity(soup)
                     equipment.description = self.get_description(soup)
-                    equipment_image_link = self.get_image_link(soup)
+                    equipment.image = self.get_image_link(soup)
+                    #self.save_image(equipment_image_link, equipment.name)
+                    #equipment_image_link = "unknown"
                     effect_fields = self.find_effect_fields(soup)
                     if effect_fields:
                         scraped_fields = self.scrape_effect_fields(effect_fields)
                         keywords = scraped_fields.keys()
                         for keyword in keywords:
-                            min_value, max_value = scraped_fields[keyword]
-                            setattr(equipment, self.keywords[keyword],NumericRange(lower=min_value, upper=max_value, bounds='[]', empty=False))
+                            setattr(equipment, self.keywords[keyword],scraped_fields[keyword])
                     recipe = self.get_recipe(soup, recipe)
+                    self.get_dropped_by(soup)
                     if recipe:
                         equipment.recipe = recipe
-                    self.save_image(equipment_image_link, equipment.name)
                     driver.quit()
                     return equipment
                 except Exception as e: 
+                    print(e)
                     driver.quit()
                     self.failed_urls[url] = e
                     return None

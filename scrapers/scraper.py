@@ -1,11 +1,10 @@
-from azure.core.exceptions import ResourceExistsError
 from bs4 import BeautifulSoup
 import time
 import re
 
 class Scraper():
-    def __init__(self,blob_service_client, driver, options, queue):
-        self.blob_service_client = blob_service_client
+    def __init__(self, driver, options, queue):
+        #self.blob_service_client = blob_service_client
         self.dr = driver
         self.options = options
         self.url_queue = queue
@@ -13,14 +12,14 @@ class Scraper():
         self.skipped_urls = {}
         
 
-    def save_image(self, imagelink, imageName):
-            blob_client = self.blob_service_client.get_blob_client(container='dofus-pics', blob=f'{imageName}.png')
-            try:
-                blob_client.upload_blob_from_url(imagelink)
-            except ResourceExistsError:
-                print(f'{imageName}.png blob already exists')
-            except:
-                print('something else went wrong!')
+    #def save_image(self, imagelink, imageName):
+    #        blob_client = self.blob_service_client.get_blob_client(container='wakfu-pics', blob=f'{imageName}.png')
+    #        try:
+    #            blob_client.upload_blob_from_url(imagelink)
+    #        except ResourceExistsError:
+    #            print(f'{imageName}.png blob already exists')
+    #        except:
+    #            print('something else went wrong!')
 
     def get_image_link(self,soup):
         resourceImage = soup.find('div', {'class':'ak-encyclo-detail-illu'})
@@ -44,7 +43,7 @@ class Scraper():
 
     def get_link(self, url, tag,pages):
         #need to find a better way to determine the amount of pages in the table. 
-            pageNumber = 1
+            pageNumber = 80
             driver = self.dr.create_driver(self.options)
             while pageNumber < pages + 1:
                 driver.get(self.dr.create_full_url(url+str(pageNumber)))

@@ -4,16 +4,16 @@ from models.monster import Monster
 from .scraper import Scraper
 from sqlalchemy import exists
 import time
-from helpers import db
+#from helpers import db
 from models.resource import Resource
 from bs4 import BeautifulSoup
 import re
 
 class Resourcescraper(Scraper):
-    def __init__(self, blob_service_client, driver, options, queue):
-        super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
-        self.Session = db.create_session()
-        self.session = self.Session()
+    def __init__(self, driver, options, queue):
+        super().__init__(driver=driver, options=options, queue=queue)
+        #self.Session = db.create_session()
+        #self.session = self.Session()
 
     def get_type(self,soup):
         type= soup.find('div', {'class': 'ak-encyclo-detail-type col-xs-6'})

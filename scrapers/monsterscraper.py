@@ -2,16 +2,16 @@ import re
 from bs4 import BeautifulSoup
 from .scraper import Scraper
 from models.monster import Monster
-from helpers import db
+#from helpers import db
 from sqlalchemy import exists
 from psycopg2.extras import NumericRange
 import time
 
 class Monsterscraper(Scraper):
-    def __init__(self,blob_service_client, driver, options, queue):
-        super().__init__(blob_service_client=blob_service_client, driver=driver, options=options, queue=queue)
-        self.Session = db.create_session()
-        self.session = self.Session()
+    def __init__(self, driver, options, queue):
+        super().__init__(driver=driver, options=options, queue=queue)
+        #self.Session = db.create_session()
+        #self.session = self.Session()
     def parse_ranges(self, soup, stat):
         result = soup.find(text=re.compile(stat))
         div = result.parent
@@ -46,7 +46,7 @@ class Monsterscraper(Scraper):
             end = begin
         return (begin,end)
 
-    def get_numeric_range(min,max):
+    def get_numeric_range(self,min,max):
         range = NumericRange(lower = min, upper=max, bounds='[]', empty=False)
         return range
     
@@ -54,10 +54,27 @@ class Monsterscraper(Scraper):
         family = soup.find('div', {'class': 'col-xs-8 ak-encyclo-detail-type'})
         family = family.findChild('span', recursive=False)
         return family.text
+    
+
+            
+    def get_catchable(self, soup):
+        catchable = soup.find('div',{'class':'catchable'})
+        is_catchable = (catchable.find('strong').text.strip())
+        if(is_catchable == "Non"):
+            return False
+        else:
+            return True
+        
+    def get_element(self, soup, element_name):
+        element = soup.find('span',{'class':'ak-icon-small ak-'+element_name})
+        element_div = element.parent.parent.find('div',{'class':'ak-title'})
+        element_spans = element_div.findAll('span')
+        return element_spans[1].text.replace("%","").strip(),element_spans[3].text.replace("%","").strip()
 
     def get_monster_info(self, url):
         id = self.get_id(url)
-        monster_exists = self.session.query(exists().where(Monster.id == id)).scalar()
+        #monster_exists = self.session.query(exists().where(Monster.id == id)).scalar()
+        monster_exists = None
         if not monster_exists:
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
@@ -68,31 +85,48 @@ class Monsterscraper(Scraper):
                     monsterImageLink = self.get_image_link(soup)
                     name = self.get_name(soup)
                     if monsterImageLink:
-                        self.save_image(monsterImageLink,name)
+                        #self.save_image(monsterImageLink,name)
+                        a = 1
                     family = self.get_family(soup)
+                    is_catchable = self.get_catchable(soup)
                     levelRange = soup.find('div', {'class': 'col-xs-4 text-right ak-encyclo-detail-level'},text=True)
-                    minLevel, maxLevel = self.parse_level_ranges(str.split(levelRange.text, sep="to"))
-                    minHp, maxHp = self.parse_ranges(soup, 'HP:')
-                    minAp, maxAp = self.parse_ranges(soup, "AP:")
-                    minMp, maxMp = self.parse_ranges(soup, "MP:")
-                    minEarthRes,maxEarthRes = self.parse_ranges(soup, "Earth:")
-                    minAirRes, maxAirRes = self.parse_ranges(soup, "Air:")
-                    minFireRes, maxFireRes = self.parse_ranges(soup, "Fire:")
-                    minWaterRes, maxWaterRes = self.parse_ranges(soup, "Water:")
-                    minNeutralRes, maxNeutralRes = self.parse_ranges(soup, "Neutral:")
+                    minLevel, maxLevel = self.parse_level_ranges(str.split(levelRange.text, sep="à"))
+                    minPV, maxPV = self.parse_ranges(soup, 'Points de vie :')
+                    minPA, maxPA = self.parse_ranges(soup, "Points d'action :")
+                    minPM, maxPM = self.parse_ranges(soup, "PM :")
+                    minInitiative, maxInitiative = self.parse_ranges(soup, "Initiative :")
+                    minTacle, maxTacle = self.parse_ranges(soup, "Tacle :")
+                    minEsquive, maxEsquive = self.parse_ranges(soup, "Esquive :")
+                    minParade, maxParade = self.parse_ranges(soup, "Parade :")
+                    minCritique, maxCritique = self.parse_ranges(soup, "Coup critique :")
+                    
+                    maitrise_eau_value,resistance_eau_value = self.get_element(soup,"water")
+                    maitrise_terre_value,resistance_terre_value = self.get_element(soup,"earth")
+                    maitrise_air_value,resistance_air_value = self.get_element(soup,"air")
+                    maitrise_feu_value,resistance_feu_value = self.get_element(soup,"fire")
+                    
                     monster = Monster(
                         id = id,
                         name=name,
                         family=family,
                         level = self.get_numeric_range(minLevel,maxLevel),
-                        mp = self.get_numeric_range(minMp,maxMp),
-                        ap = self.get_numeric_range(minAp,maxAp),
-                        hp = self.get_numeric_range(minHp,maxHp),
-                        waterres = self.get_numeric_range(minWaterRes,maxWaterRes),
-                        fireres = self.get_numeric_range(minFireRes,maxFireRes),
-                        earthres = self.get_numeric_range(minEarthRes,maxEarthRes),
-                        airres = self.get_numeric_range(minAirRes,maxAirRes),
-                        neutralres = self.get_numeric_range(minNeutralRes,maxNeutralRes)
+                        pm = self.get_numeric_range(minPM,maxPM),
+                        pa = self.get_numeric_range(minPA,maxPA),
+                        pv = self.get_numeric_range(minPV,maxPV),
+                        initiative = self.get_numeric_range(minInitiative,maxInitiative),
+                        tacle = self.get_numeric_range(minTacle,maxTacle),
+                        esquive = self.get_numeric_range(minEsquive,maxEsquive),
+                        parade = self.get_numeric_range(minParade,maxParade),
+                        critique = self.get_numeric_range(minCritique,maxCritique),
+                        catchable = is_catchable,
+                        maitrise_eau = maitrise_eau_value,
+                        resistance_eau = resistance_eau_value,
+                        maitrise_terre = maitrise_terre_value,
+                        resistance_terre = resistance_terre_value,
+                        maitrise_air = maitrise_air_value,
+                        resistance_air = resistance_air_value,
+                        maitrise_feu = maitrise_feu_value,
+                        resistance_feu = resistance_feu_value
                     )
                     driver.quit()
                     return monster
