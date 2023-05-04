@@ -5,9 +5,11 @@ from psycopg2.extras import NumericRange
 import re
 from sqlalchemy import exists
 from bs4 import BeautifulSoup
+from models.monsterequipment import MonsterEquipment
 from models.equipment import Equipment
 from models.resource import Resource
 from models.consumable import Consumable
+from models.monster import Monster
 from models.recipe import Recipe
 from models.ingredient import Ingredient
 from models.profession import Profession
@@ -199,9 +201,19 @@ class Equipmentscraper(Scraper):
                         for keyword in keywords:
                             setattr(equipment, self.keywords[keyword],scraped_fields[keyword])
                     recipe = self.get_recipe(soup, recipe)
-                    self.get_dropped_by(soup)
                     if recipe:
                         equipment.recipe = recipe
+                    monsters = self.get_dropped_by(soup)
+                    for pairing in monsters:
+                        monster_key = pairing['id']
+                        drop_rate = pairing['drop_rate']
+                        if self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
+                            a = MonsterEquipment(drop_rate=drop_rate, monster_id=monster_key)
+                            equipment.monsters.append(a)
+                    if monsters is not None and equipment.monsters is None:
+                        self.failed_urls[url] = 'failed creating resource. All monsters that drop this resource are either incomplete or not present in db. Please check and scrape if needed'
+                    if monsters:
+                        equipment.monsters = monsters
                     driver.quit()
                     return equipment
                 except Exception as e: 

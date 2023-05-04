@@ -126,14 +126,14 @@ def scrape_consumables():
 
 #Production
 
-#scrape_monsters()
+#scrape_monsters() - Ready - Sorts non implémentés / Inutiles (peut-être un jour si Wakfu améliore son Encyclopédie)
 #scrape_resources()
 #scrape_consumables()
 #scrape_equipment() - Ready
 #scrape_weapons()
-#scrape_accesories()  --Tout ce qui est sacs etc...
+#scrape_accesories()  -- Info : Tout ce qui est sacs etc...
 
 #For Test purpose
 
 #equipmentscraper.get_equipment_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/armures/25572-bottes-riktus-brakmar")
-monsterscraper.get_monster_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/monstres/90-piou-vert")
+#monsterscraper.get_monster_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/monstres/90-piou-vert")

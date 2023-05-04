@@ -2,6 +2,7 @@ import re
 from bs4 import BeautifulSoup
 from .scraper import Scraper
 from models.monster import Monster
+from models.monsterharvest import MonsterHarvest
 #from helpers import db
 from sqlalchemy import exists
 from psycopg2.extras import NumericRange
@@ -71,6 +72,27 @@ class Monsterscraper(Scraper):
         element_spans = element_div.findAll('span')
         return element_spans[1].text.replace("%","").strip(),element_spans[3].text.replace("%","").strip()
 
+    def get_harvest_list(self, soup):
+        monster_harvest = []
+        titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
+        for title in titles:
+            text = str.strip(title.text)
+            if text.strip() == 'Permet de recolter':
+                content = title.find_next_sibling('div')
+                columns = content.findAll('div',{'class':'ak-column ak-container col-xs-12 col-md-6'})
+                for column in columns:
+                    link_raw = column.find('a')
+                    resource_name = column.find('div', {'class':'ak-title'})
+                    if str.strip(resource_name.text):
+                        link_raw = str.split(link_raw['href'],'-')[0]
+                        job = column.find('div',{'class':'ak-text'}).text.split(" - ")
+                        job_name = job[0].strip()
+                        job_level = ''.join(re.findall('[.,0-9]',job[1])).strip()
+                        resource_id = ''.join(re.findall('[0-9]', link_raw))
+                        drop = MonsterHarvest(job_name=job_name,job_level=job_level,resource_id=resource_id)
+                        monster_harvest.append(drop)
+        return monster_harvest
+
     def get_monster_info(self, url):
         id = self.get_id(url)
         #monster_exists = self.session.query(exists().where(Monster.id == id)).scalar()
@@ -105,6 +127,8 @@ class Monsterscraper(Scraper):
                     maitrise_air_value,resistance_air_value = self.get_element(soup,"air")
                     maitrise_feu_value,resistance_feu_value = self.get_element(soup,"fire")
                     
+                    harvest_list = self.get_harvest_list(soup)
+                    
                     monster = Monster(
                         id = id,
                         name=name,
@@ -128,6 +152,11 @@ class Monsterscraper(Scraper):
                         maitrise_feu = maitrise_feu_value,
                         resistance_feu = resistance_feu_value
                     )
+                    for harvested in harvest_list:
+                        monster.harvest.append(harvested)
+                        print(harvested.job_name)
+                        print(harvested.job_level)
+                        print(harvested.resource_id)
                     driver.quit()
                     return monster
                 except Exception as e:

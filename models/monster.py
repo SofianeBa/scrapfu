@@ -3,6 +3,7 @@ from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy import Column, String, Boolean
 from .monsterresource import MonsterResource
 from .monsterequipment import MonsterEquipment
+from .monsterharvest import MonsterHarvest
 from sqlalchemy.dialects.postgresql import INT4RANGE
 from .base import Base
 
@@ -35,4 +36,5 @@ class Monster(Base):
 
     #relationship - resources the monster drops
     resources = relationship("MonsterResource", back_populates="monster") 
-    equipments = relationship("MonsterEquipment", back_populates="monster")   
+    equipments = relationship("MonsterEquipment", back_populates="monster")
+    harvest = relationship("MonsterHarvest", back_populates="monster")
