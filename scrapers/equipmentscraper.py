@@ -207,7 +207,7 @@ class Equipmentscraper(Scraper):
                     for pairing in monsters:
                         monster_key = pairing['id']
                         drop_rate = pairing['drop_rate']
-                        if self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
+                        if True:#self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
                             a = MonsterEquipment(drop_rate=drop_rate, monster_id=monster_key)
                             equipment.monsters.append(a)
                     if monsters is not None and equipment.monsters is None:

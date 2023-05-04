@@ -15,6 +15,7 @@ class Monster(Base):
     name = Column(String(128),nullable=False)
     family = Column(String(128),nullable=False)
     catchable = Column(Boolean,nullable=False)
+    image = Column(String, nullable = False)
     
     level = Column(INT4RANGE, nullable = True)
     pm = Column(INT4RANGE, nullable = True)

@@ -128,11 +128,14 @@ class Monsterscraper(Scraper):
                     maitrise_feu_value,resistance_feu_value = self.get_element(soup,"fire")
                     
                     harvest_list = self.get_harvest_list(soup)
+
+                    image_link = self.get_image_link(soup)
                     
                     monster = Monster(
                         id = id,
                         name=name,
                         family=family,
+                        image = image_link,
                         level = self.get_numeric_range(minLevel,maxLevel),
                         pm = self.get_numeric_range(minPM,maxPM),
                         pa = self.get_numeric_range(minPA,maxPA),
@@ -154,9 +157,6 @@ class Monsterscraper(Scraper):
                     )
                     for harvested in harvest_list:
                         monster.harvest.append(harvested)
-                        print(harvested.job_name)
-                        print(harvested.job_level)
-                        print(harvested.resource_id)
                     driver.quit()
                     return monster
                 except Exception as e:

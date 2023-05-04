@@ -127,7 +127,7 @@ def scrape_consumables():
 #Production
 
 #scrape_monsters() - Ready - Sorts non implémentés / Inutiles (peut-être un jour si Wakfu améliore son Encyclopédie)
-#scrape_resources()
+#scrape_resources() - Ready
 #scrape_consumables()
 #scrape_equipment() - Ready
 #scrape_weapons()
@@ -136,4 +136,10 @@ def scrape_consumables():
 #For Test purpose
 
 #equipmentscraper.get_equipment_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/armures/25572-bottes-riktus-brakmar")
+
 #monsterscraper.get_monster_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/monstres/90-piou-vert")
+
+#resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/27878-fibre-divine?recipe_category=79")
+#resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/28345-pointe-sumorse")
+#resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/27823-semence-cagnardeur")
+#resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/2702-bec-piou")
