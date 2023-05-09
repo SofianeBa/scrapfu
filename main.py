@@ -261,14 +261,14 @@ def test_monster(my_url):
 #Production
 
 #Done Scrapping scrape_monsters() # - Scrapped - Sorts non implémentés / Inutiles (peut-être un jour si Wakfu améliore son Encyclopédie)
-#Manque monster_harvest
+#Manque monster_harvest - Ready ?
 
 #Done Scrapping scrape_resources() # - Scrapped
 #Done Scrapping scrape_consumables() # - Scrapped
 #Done Scrapping scrape_weapons() # - Scrapped
 
-#scrape_accesories() # - Ready -- Info : Tout ce qui est sacs etc...
-#scrape_equipment() # - Ready 
+#scrape_accesories() # - Ready ? -- Info : Tout ce qui est sacs etc...
+#scrape_equipment() # - Ready  ?
 
 #For Test purpose
 
