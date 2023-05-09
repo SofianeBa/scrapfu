@@ -1,6 +1,7 @@
+from models.weapon import Weapon
 from .scraper import Scraper
 import time
-#from helpers import db
+from helpers import db
 from psycopg2.extras import NumericRange
 import re
 from sqlalchemy import exists
@@ -41,8 +42,8 @@ class Equipmentscraper(Scraper):
             '% Quantité Récolte en Pêcheur': 'quantite_recolte_pêcheur'
             }
         self.found_keywords = []
-        #self.Session = db.create_session()
-        #self.session = self.Session()
+        self.Session = db.create_session()
+        self.session = self.Session()
 
     def find_effect_fields(self, soup):
         try:
@@ -119,36 +120,45 @@ class Equipmentscraper(Scraper):
     def get_rarity(self, soup):
         rarity = soup.find('div',{'class':'ak-object-rarity'})
         return rarity.findAll('span')[0].text.strip()
-
-    def get_recipe(self, soup, recipe):
-        recipe_section =  soup.find('div',{'class':'ak-container ak-panel ak-crafts'})
-        if recipe_section:
-            profession_section = recipe_section.find('div', {'class':'ak-panel-intro'})
-            profession_values = str.split(profession_section.text, 'Niveau')
-            profession_level = str.strip(profession_values[1])
-            #profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
-            ingredient_list = recipe_section.findAll('div', {'class': 'ak-list-element'})
-            recipe.level = profession_level
-            recipe.profession = profession_values
-            for ingredient_row in ingredient_list:
-                amount_tag = ingredient_row.find('div', {'class':'ak-front'})
-                amount = ''.join(re.findall('[0-9]',amount_tag.text))
-                ingredient_id_tag = ingredient_row.find('a')
-                ingredient_id = self.get_id(ingredient_id_tag['href'])
-                #is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
-                #is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
-                is_equipment_id = False
-                is_consumable_id = False
-                if is_equipment_id:
-                    ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
-                elif is_consumable_id:
-                    ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
-                else:
-                    ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
-                recipe.ingredients.append(ingredient)
-            return recipe
-        else:
-            return None
+    def get_recipe(self, soup):
+        recipes = []
+        titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
+        for title in titles:
+            text = str.strip(title.text)
+            if text == 'Recette':
+                content = title.find_next_sibling('div')
+                recipe_lines = content.findAll('div',{'class':'ak-panel-content'})
+                for recipe_line in recipe_lines:
+                    recipe = Recipe()
+                    profession_section = recipe_line.find('div', {'class':'ak-panel-intro'})
+                    #Si c'est vide, alors ce n'est pas une recette pour craft la ressource, mais une recette où la ressource est utilisée
+                    if profession_section is None:
+                        return None
+                    profession_values = str.split(profession_section.text, '- Niveau')
+                    profession_level = str.strip(profession_values[1])
+                    profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]).strip().lower())).one()
+                    recipe.level = profession_level
+                    recipe.profession_id = profession_result.id
+                    ingredient_list = recipe_line.findAll('div', {'class': 'ak-list-element'})
+                    for ingredient_row in ingredient_list:
+                        amount_tag = ingredient_row.find('div', {'class':'ak-front'})
+                        amount = ''.join(re.findall('[0-9]',amount_tag.text))
+                        ingredient_id_tag = ingredient_row.find('a')
+                        ingredient_id = self.get_id(ingredient_id_tag['href'])
+                        is_weapon_id = self.session.query(exists().where(Weapon.id == ingredient_id)).scalar()
+                        is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
+                        is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
+                        if is_weapon_id:
+                            ingredient = Ingredient(weapon_id=ingredient_id, quantity=amount)
+                        if is_equipment_id:
+                            ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
+                        elif is_consumable_id:
+                            ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
+                        else:
+                            ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
+                        recipe.ingredients.append(ingredient)
+                    recipes.append(recipe)
+        return recipes
             
 
     def get_dropped_by(self, soup):
@@ -174,8 +184,7 @@ class Equipmentscraper(Scraper):
     
     def get_equipment_info(self, url):
         id = self.get_id(url)
-        equipment_exists = False
-        #equipment_exists = self.session.query(exists().where(Equipment.id == id)).scalar()
+        equipment_exists = self.session.query(exists().where(Equipment.id == id)).scalar()
         if not equipment_exists:
             equipment = Equipment()
             recipe = Recipe()
@@ -196,20 +205,26 @@ class Equipmentscraper(Scraper):
                     #equipment_image_link = "unknown"
                     effect_fields = self.find_effect_fields(soup)
                     if effect_fields:
-                        scraped_fields = self.scrape_effect_fields(effect_fields)
+                        scraped_fields = self.scrape_carac_fields(effect_fields)
                         keywords = scraped_fields.keys()
                         for keyword in keywords:
-                            setattr(equipment, self.keywords[keyword],scraped_fields[keyword])
+                            value = scraped_fields[keyword]
+                            if 'Maîtrise sur' in keyword:
+                                setattr(equipment, self.keywords[keyword], value[:-1])
+                            elif 'Résistance sur' in keyword:
+                                setattr(equipment, self.keywords[keyword], value[:-1])
+                            else:
+                                setattr(equipment, self.keywords[keyword], value)
                     recipe = self.get_recipe(soup, recipe)
-                    if recipe:
+                    if recipe is not None:
                         equipment.recipe = recipe
                     monsters = self.get_dropped_by(soup)
                     for pairing in monsters:
                         monster_key = pairing['id']
                         drop_rate = pairing['drop_rate']
-                        if True:#self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
+                        if self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
                             a = MonsterEquipment(drop_rate=drop_rate, monster_id=monster_key)
-                            equipment.monsters.append(a)
+                            equipment.remember.append(a)
                     if monsters is not None and equipment.monsters is None:
                         self.failed_urls[url] = 'failed creating resource. All monsters that drop this resource are either incomplete or not present in db. Please check and scrape if needed'
                     if monsters:

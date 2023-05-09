@@ -8,7 +8,5 @@ class MonsterHarvest(Base):
     __tablename__='monster_harvest'
     monster_id = Column(ForeignKey('monster.id'), primary_key=True)
     resource_id = Column(ForeignKey('resource.id'), primary_key=True)
-    job_name = Column(String, nullable=False)
-    job_level = Column(Integer, nullable=False)
-    monster = relationship('Monster',back_populates='harvest')
-    resource = relationship('Resource',back_populates='harvest')
+    profesion_id = Column(ForeignKey('profesion.id'), primary_key=True)
+    profesion_level = Column(Integer, nullable=False)

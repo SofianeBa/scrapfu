@@ -14,15 +14,17 @@ class Resource(Base):
     id = Column(Integer, primary_key=True, autoincrement=False)
     type = Column(String, nullable=False)   
     name = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
     level = Column(Integer, nullable=False)
     image = Column(String, nullable = False)
     rarity = Column(String, nullable = False)
 
-    monsters = relationship("MonsterResource", back_populates="resource")
-    recipes = relationship("Ingredient", back_populates="resource")
-    harvest = relationship("MonsterHarvest", back_populates="resource") 
-    recipe = relationship('Recipe', back_populates='resource')
+    monsters = relationship("Monster", secondary="monster_resource", back_populates="resources")
+    harvest = relationship("Monster", secondary="monster_harvest", back_populates="harvest")
+
+
+    recipes = relationship("Recipe", back_populates="resource")
+    ingredients = relationship("Ingredient", back_populates="resource")
 
     def __repr__(self) -> str:
         return self._repr(id=self.id,type=self.type,name=self.name,description=self.description,level=self.level,image=self.image,rarity=self.rarity)

@@ -9,3 +9,4 @@ log.txt
 sql_change.py
 helpers/extension/*
 helers/driver.py
+*.txt

@@ -41,9 +41,9 @@ class Scraper():
         object_id = int(object_id)
         return object_id 
 
-    def get_link(self, url, tag,pages):
+    def get_link(self, url, tag,page_start,pages):
         #need to find a better way to determine the amount of pages in the table. 
-            pageNumber = 80
+            pageNumber = page_start
             driver = self.dr.create_driver(self.options)
             while pageNumber < pages + 1:
                 driver.get(self.dr.create_full_url(url+str(pageNumber)))

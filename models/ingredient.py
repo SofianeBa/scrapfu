@@ -13,8 +13,10 @@ class Ingredient(Base):
     weapon_id = Column(ForeignKey('weapon.id'), nullable=True)
     consumable_id = Column(ForeignKey('consumable.id'), nullable = True)
     quantity = Column(Integer, nullable=False)
-    recipe = relationship('Recipe',back_populates='ingredients')
-    resource = relationship('Resource',back_populates='recipes')
-    equipment = relationship('Equipment', back_populates='ingredients')
+   
     weapon = relationship('Weapon', back_populates='ingredients')
+    resource = relationship("Resource", back_populates="ingredients")
+    equipment = relationship("Equipment", back_populates="ingredients")
     consumable = relationship('Consumable', back_populates='ingredients')
+
+    recipe = relationship('Recipe', back_populates='ingredients')

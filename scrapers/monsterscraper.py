@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from .scraper import Scraper
 from models.monster import Monster
 from models.monsterharvest import MonsterHarvest
-#from helpers import db
+from helpers import db
 from sqlalchemy import exists
 from psycopg2.extras import NumericRange
 import time
@@ -11,10 +11,12 @@ import time
 class Monsterscraper(Scraper):
     def __init__(self, driver, options, queue):
         super().__init__(driver=driver, options=options, queue=queue)
-        #self.Session = db.create_session()
-        #self.session = self.Session()
+        self.Session = db.create_session()
+        self.session = self.Session()
     def parse_ranges(self, soup, stat):
         result = soup.find(text=re.compile(stat))
+        if result is None:
+            return 0,0
         div = result.parent
         range = div.findChild('span')
         rangeText = str.split(range.text, sep='to')
@@ -45,7 +47,7 @@ class Monsterscraper(Scraper):
         else:
             begin = ''.join(re.findall('[0-9]',levels[0]))
             end = begin
-        return (begin,end)
+        return (int(begin),int(end))
 
     def get_numeric_range(self,min,max):
         range = NumericRange(lower = min, upper=max, bounds='[]', empty=False)
@@ -70,9 +72,10 @@ class Monsterscraper(Scraper):
         element = soup.find('span',{'class':'ak-icon-small ak-'+element_name})
         element_div = element.parent.parent.find('div',{'class':'ak-title'})
         element_spans = element_div.findAll('span')
-        return element_spans[1].text.replace("%","").strip(),element_spans[3].text.replace("%","").strip()
+        return int(element_spans[1].text.replace("%","").strip()),int(element_spans[3].text.replace("%","").strip())
 
     def get_harvest_list(self, soup):
+        print("Let's harvest")
         monster_harvest = []
         titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
         for title in titles:
@@ -90,13 +93,13 @@ class Monsterscraper(Scraper):
                         job_level = ''.join(re.findall('[.,0-9]',job[1])).strip()
                         resource_id = ''.join(re.findall('[0-9]', link_raw))
                         drop = MonsterHarvest(job_name=job_name,job_level=job_level,resource_id=resource_id)
+                        print(drop)
                         monster_harvest.append(drop)
         return monster_harvest
 
     def get_monster_info(self, url):
         id = self.get_id(url)
-        #monster_exists = self.session.query(exists().where(Monster.id == id)).scalar()
-        monster_exists = None
+        monster_exists = self.session.query(exists().where(Monster.id == id)).scalar()
         if not monster_exists:
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
@@ -126,8 +129,7 @@ class Monsterscraper(Scraper):
                     maitrise_terre_value,resistance_terre_value = self.get_element(soup,"earth")
                     maitrise_air_value,resistance_air_value = self.get_element(soup,"air")
                     maitrise_feu_value,resistance_feu_value = self.get_element(soup,"fire")
-                    
-                    harvest_list = self.get_harvest_list(soup)
+
 
                     image_link = self.get_image_link(soup)
                     
@@ -137,14 +139,14 @@ class Monsterscraper(Scraper):
                         family=family,
                         image = image_link,
                         level = self.get_numeric_range(minLevel,maxLevel),
-                        pm = self.get_numeric_range(minPM,maxPM),
-                        pa = self.get_numeric_range(minPA,maxPA),
-                        pv = self.get_numeric_range(minPV,maxPV),
-                        initiative = self.get_numeric_range(minInitiative,maxInitiative),
-                        tacle = self.get_numeric_range(minTacle,maxTacle),
-                        esquive = self.get_numeric_range(minEsquive,maxEsquive),
-                        parade = self.get_numeric_range(minParade,maxParade),
-                        critique = self.get_numeric_range(minCritique,maxCritique),
+                        pm = minPM,
+                        pa = minPA,
+                        pv = minPV,
+                        initiative = minInitiative,
+                        tacle = minTacle,
+                        esquive = minEsquive,
+                        parade = minParade,
+                        critique = minCritique,
                         catchable = is_catchable,
                         maitrise_eau = maitrise_eau_value,
                         resistance_eau = resistance_eau_value,
@@ -155,8 +157,10 @@ class Monsterscraper(Scraper):
                         maitrise_feu = maitrise_feu_value,
                         resistance_feu = resistance_feu_value
                     )
-                    for harvested in harvest_list:
-                        monster.harvest.append(harvested)
+                    #Cela ne fonctionne pas, car les ressources n'existent pas encore...
+                    #harvest_list = self.get_harvest_list(soup)
+                    #for harvested in harvest_list:
+                        #monster.harvest.append(harvested)
                     driver.quit()
                     return monster
                 except Exception as e:
@@ -165,9 +169,8 @@ class Monsterscraper(Scraper):
                     return None
             else:
                 driver.quit()
-                self.skipped_urls[url] == 'Skipping due to 404'
+                self.skipped_urls[url] = 'Skipping due to 404'
                 return None
         else:
-            self.skipped_urls[url] == 'Present in DB. Skipping'
-            return None
+            self.skipped_urls[url] = 'Present in DB. Skipping'
             

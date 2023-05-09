@@ -9,5 +9,3 @@ class MonsterEquipment(Base):
     monster_id = Column(ForeignKey('monster.id'), primary_key=True)
     equipment_id = Column(ForeignKey('equipment.id'), primary_key=True) 
     drop_rate = Column(Float, nullable=True)
-    monster = relationship('Monster',back_populates='equipments')
-    equipment = relationship('Equipment',back_populates='monsters')

@@ -1,5 +1,7 @@
+from models.equipment import Equipment
+from models.weapon import Weapon
 from .scraper import Scraper
-#from helpers import db
+from helpers import db
 from models.consumable import Consumable
 from models.resource import Resource
 from models.recipe import Recipe
@@ -12,8 +14,8 @@ from models.profession import Profession
 class Consumablescraper(Scraper):
     def __init__(self, driver, options, queue):
         super().__init__(driver, options, queue)
-        #Session = db.create_session()
-        #self.session = Session()
+        Session = db.create_session()
+        self.session = Session()
         self.keywords = {
             'Agility':'agility', 
             'Chance':'chance' ,
@@ -31,7 +33,7 @@ class Consumablescraper(Scraper):
                 titles = soup.findAll('div', {'class': 'ak-panel-title'})
                 if titles != None:
                     for title in titles:
-                        if str.strip(title.text) == 'Effects':
+                        if str.strip(title.text) == 'Effets':
                             effects_parent = title.parent
                             effects_list = effects_parent.findAll('div',{'class':'ak-title'})
                             return effects_list
@@ -99,33 +101,45 @@ class Consumablescraper(Scraper):
                 strong_value = parent.find('span')
                 return strong_value.text
 
-    def get_recipe(self, soup, recipe):
-            recipe_section =  soup.find('div',{'class':'ak-container ak-panel ak-crafts'})
-            if recipe_section:
-                profession_section = recipe_section.find('div', {'class':'ak-panel-intro'})
-                profession_values = str.split(profession_section.text, 'Level')
-                profession_level = str.strip(profession_values[1])
-                try:
-                    profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]))).one()
-                    recipe.profession = profession_result.id
-                except:
-                    print('Profession not found. Probably a fairywork')
-                ingredient_list = recipe_section.findAll('div', {'class': 'ak-list-element'})
-                recipe.level = profession_level
-                for ingredient_row in ingredient_list:
-                    amount_tag = ingredient_row.find('div', {'class':'ak-front'})
-                    amount = ''.join(re.findall('[0-9]',amount_tag.text))
-                    ingredient_id_tag = ingredient_row.find('a')
-                    ingredient_id = self.get_id(ingredient_id_tag['href'])
-                    is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
-                    if is_consumable_id:
-                        ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
-                    else:
-                        ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
-                    recipe.ingredients.append(ingredient)
-                return recipe
-            else:
-                return None
+    def get_recipe(self, soup):
+        recipes = []
+        titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
+        for title in titles:
+            text = str.strip(title.text)
+            if text == 'Recette':
+                content = title.find_next_sibling('div')
+                recipe_lines = content.findAll('div',{'class':'ak-panel-content'})
+                for recipe_line in recipe_lines:
+                    recipe = Recipe()
+                    profession_section = recipe_line.find('div', {'class':'ak-panel-intro'})
+                    #Si c'est vide, alors ce n'est pas une recette pour craft la ressource, mais une recette où la ressource est utilisée
+                    if profession_section is None:
+                        return None
+                    profession_values = str.split(profession_section.text, '- Niveau')
+                    profession_level = str.strip(profession_values[1])
+                    profession_result = self.session.execute(select(Profession.id).where(Profession.name == str.strip(profession_values[0]).strip().lower())).one()
+                    recipe.level = profession_level
+                    recipe.profession_id = profession_result.id
+                    ingredient_list = recipe_line.findAll('div', {'class': 'ak-list-element'})
+                    for ingredient_row in ingredient_list:
+                        amount_tag = ingredient_row.find('div', {'class':'ak-front'})
+                        amount = ''.join(re.findall('[0-9]',amount_tag.text))
+                        ingredient_id_tag = ingredient_row.find('a')
+                        ingredient_id = self.get_id(ingredient_id_tag['href'])
+                        is_weapon_id = self.session.query(exists().where(Weapon.id == ingredient_id)).scalar()
+                        is_equipment_id = self.session.query(exists().where(Equipment.id == ingredient_id)).scalar()
+                        is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
+                        if is_weapon_id:
+                            ingredient = Ingredient(weapon_id=ingredient_id, quantity=amount)
+                        if is_equipment_id:
+                            ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
+                        elif is_consumable_id:
+                            ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
+                        else:
+                            ingredient = Ingredient(resource_id=ingredient_id, quantity=amount)
+                        recipe.ingredients.append(ingredient)
+                    recipes.append(recipe)
+        return recipes
 
     def get_conditions(self,soup):
         titles = soup.findAll('div', {'class':'ak-panel-title'})
@@ -135,6 +149,10 @@ class Consumablescraper(Scraper):
                 content = sibling.find('div', {'class':'ak-title'})
                 return str.strip(content.text)
 
+    def get_rarity(self, soup):
+        rarity = soup.find('div',{'class':'ak-object-rarity'})
+        return rarity.findAll('span')[0].text.strip()
+    
     def get_consumable_info(self,url):
         id = self.get_id(url)
         consumable_exists = self.session.query(exists().where(Consumable.id == id)).scalar()
@@ -142,8 +160,7 @@ class Consumablescraper(Scraper):
         if not consumable_exists:
             
             consumable = Consumable()
-            recipe = Recipe()
-            
+                        
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
             driver.get(url)
@@ -153,24 +170,28 @@ class Consumablescraper(Scraper):
                 try:
                     consumable.id = id
                     consumable.name = self.get_name(soup)
+                    consumable.image = self.get_image_link(soup)
+                    consumable.rarity = self.get_rarity(soup)
 
-                    image_link = self.get_image_link(soup)
-                    self.save_image(image_link, consumable.name)
-                    
                     consumable.type = self.get_type(soup)
                     consumable.level = self.get_level(soup)
                     consumable.description = self.get_description(soup)
-                    consumable.conditions = self.get_conditions(soup)
                     
-                    found_effects = self.find_effect_fields(soup)
-                    
+                    found_effects = self.find_effect_fields(soup)                    
                     if found_effects != None:
-                        scraped_values = self.scrape_effect_fields(found_effects)
-                        self.set_found_attributes(consumable, scraped_values)
+                        effet = ""
+                        for effect in found_effects:
+                            effet += effect.text.strip()
+                            effet += ' '
+                        effet = effet.rstrip(effet[-1])
+                        consumable.effets = effet
 
-                    recipe = self.get_recipe(soup, recipe)
-                    consumable.recipe = recipe
+                    
 
+                    recipes = self.get_recipe(soup)
+                    if len(recipes) > 0:
+                        for recipe in recipes:
+                            consumable.recipes.append(recipe)
                     driver.quit()
 
                     return consumable
@@ -185,7 +206,7 @@ class Consumablescraper(Scraper):
                 driver.quit()
                 return None
         else:
-            self.skipped_urls[url] = "Weapon found in db. Skipping"
+            self.skipped_urls[url] = "Consumable found in db. Skipping"
             return None
         
 
