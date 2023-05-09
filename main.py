@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from concurrent import futures
 from scrapers.accessoryscraper import Accessoryscraper
 from scrapers.consumablescraper import Consumablescraper
+from scrapers.monsterharvestscraper import MonsterHarvestscraper
 from scrapers.monsterscraper import Monsterscraper
 from scrapers.resourcescraper import Resourcescraper
 from scrapers.professionscraper import Professionscraper
@@ -26,15 +27,18 @@ equipmentscraper = Equipmentscraper(dr, options, url_queue)
 weaponscraper = Weaponscraper(dr, options, url_queue)
 consumablescraper = Consumablescraper(dr, options, url_queue)
 accessoryscraper = Accessoryscraper(dr, options, url_queue)
+monsterharvestscraper = MonsterHarvestscraper(dr, options, url_queue)
 
 def write_to_log(file_name, msg):
     with open(file_name, 'a+') as file:
         file.write(msg)
 
-def start_scraping(log_file_name,accessory_url = None,monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None, consumable_url = None):
+def start_scraping(log_file_name,monsterharvest_url = None,accessory_url = None,monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None, consumable_url = None):
     with futures.ThreadPoolExecutor(max_workers=6) as executer:
         if monster_url != None:
             future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster', 1, 1): 'URL_FUTURE'}
+        if monsterharvest_url != None:
+            future_to_url = {executer.submit(monsterharvestscraper.get_link, monsterharvest_url, 'Monster_Harvest', 1, 1): 'URL_FUTURE'}
         if resource_url !=None:
             future_to_url = {executer.submit(resourcescraper.get_link, resource_url, 'Resource', 1, 1): 'URL_FUTURE'}
         if profession_url !=None:
@@ -57,6 +61,8 @@ def start_scraping(log_file_name,accessory_url = None,monster_url = None, resour
                 tag = url_dict[url]
                 if tag == 'Monster':
                     future_to_url[executer.submit(monsterscraper.get_monster_info, url)] = url
+                elif tag == "Monster_Harvest":
+                    future_to_url[executer.submit(monsterharvestscraper.get_monster_harvest_info, url)] = url
                 elif tag == "Resource":
                     future_to_url[executer.submit(resourcescraper.get_resource_info, url)] = url
                 elif tag == "Profession":
@@ -73,6 +79,11 @@ def start_scraping(log_file_name,accessory_url = None,monster_url = None, resour
                 data = future.result()
                 if data != None and future_to_url[future] != 'URL_FUTURE':
                     #put into database
+                    if data.no:
+                        if hasattr(data,"remember"):
+                            for truc in data.remember:
+                                remember_done.append(truc)
+                        continue
                     try:
                         session.add(data)
                         session.commit()
@@ -137,6 +148,15 @@ def scrape_monsters():
         write_to_log('monster_log.txt', '\n')
     for url, reason in monsterscraper.skipped_urls.items():
         write_to_log('monster_log.txt', f'{url}: {reason}\n')
+
+def scrape_monster_harvest():
+    start_scraping('monster_harvest_log.txt', monster_url='/fr/mmorpg/encyclopedie/monstres?page=')
+    for url, reason in monsterharvestscraper.failed_urls.items():
+        write_to_log('monster_harvest_log.txt', f'{url}: {reason}\n')
+    for i in range(0,5):
+        write_to_log('monster_harvest_log.txt', '\n')
+    for url, reason in monsterharvestscraper.skipped_urls.items():
+        write_to_log('monster_harvest_log.txt', f'{url}: {reason}\n')
         
 def scrape_accessories():
     start_scraping('accessory_log.txt', monster_url='/fr/mmorpg/encyclopedie/accessoires?page=')
@@ -240,14 +260,14 @@ def test_monster(my_url):
 
 #Production
 
-#Done Scrapping scrape_monsters() # - Ready - Sorts non implémentés / Inutiles (peut-être un jour si Wakfu améliore son Encyclopédie)
+#Done Scrapping scrape_monsters() # - Scrapped - Sorts non implémentés / Inutiles (peut-être un jour si Wakfu améliore son Encyclopédie)
 #Manque monster_harvest
 
-#Done Scrapping scrape_resources() # - Ready
-#Done Scrapping scrape_consumables() # - Ready
-#Done Scrapping scrape_weapons() # - Ready
+#Done Scrapping scrape_resources() # - Scrapped
+#Done Scrapping scrape_consumables() # - Scrapped
+#Done Scrapping scrape_weapons() # - Scrapped
 
-#scrape_accesories() #  -- Info : Tout ce qui est sacs etc...
+#scrape_accesories() # - Ready -- Info : Tout ce qui est sacs etc...
 #scrape_equipment() # - Ready 
 
 #For Test purpose
@@ -263,17 +283,7 @@ def test_monster(my_url):
 
 #test_resource("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/29381-trophee-dh")
 #test_weapon("https://www.wakfu.com/fr/mmorpg/encyclopedie/armes/29485-sceptre-dernier-repos")
-#test_weapon("https://www.wakfu.com/fr/mmorpg/encyclopedie/armes/28194-racine-heptie")
-#test_weapon("https://www.wakfu.com/fr/mmorpg/encyclopedie/armes/21474-racine-heptie")
-#test("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/19494")
 #resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/28345-pointe-sumorse")
-#resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/27823-semence-cagnardeur")
-#resourcescraper.get_resource_info("https://www.wakfu.com/fr/mmorpg/encyclopedie/ressources/2702-bec-piou")
-
-
-
-#Boubou... #test_equipment("https://www.wakfu.com/fr/mmorpg/encyclopedie/armures/9927")
-
 
 #Problème : Sceau du maître truc
 #Bas de laine (id : 20604) nécessaire pour le craft, mais c'est un accessoire, hors pas d'accessory_id dans la recipe ni dans ingredient....

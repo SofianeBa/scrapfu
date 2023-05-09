@@ -75,7 +75,6 @@ class Monsterscraper(Scraper):
         return int(element_spans[1].text.replace("%","").strip()),int(element_spans[3].text.replace("%","").strip())
 
     def get_harvest_list(self, soup):
-        print("Let's harvest")
         monster_harvest = []
         titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
         for title in titles:
@@ -93,7 +92,6 @@ class Monsterscraper(Scraper):
                         job_level = ''.join(re.findall('[.,0-9]',job[1])).strip()
                         resource_id = ''.join(re.findall('[0-9]', link_raw))
                         drop = MonsterHarvest(job_name=job_name,job_level=job_level,resource_id=resource_id)
-                        print(drop)
                         monster_harvest.append(drop)
         return monster_harvest
 
