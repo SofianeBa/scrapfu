@@ -24,13 +24,6 @@ class Professionscraper(Scraper):
             browser.quit()
             return f"Done scraping {tag} urls"
 
-    def get_description(self, soup):
-        titles = soup.findAll('div', {'class': 'ak-panel-title'})
-        for title in titles:
-            if str.strip(title.text) == 'Profession description':
-                parent = title.parent
-                description = parent.find('p')
-                return description.text
 
     def get_profession_info(self, url):
         time.sleep(5)
