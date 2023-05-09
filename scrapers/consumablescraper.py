@@ -3,7 +3,6 @@ from models.weapon import Weapon
 from .scraper import Scraper
 from helpers import db
 from models.consumable import Consumable
-from models.resource import Resource
 from models.recipe import Recipe
 from bs4 import BeautifulSoup
 import time, re

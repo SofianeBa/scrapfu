@@ -1,21 +1,13 @@
 from psycopg2.extras import NumericRange
 from models.monster import Monster
 
-from models.monsterequipment import MonsterEquipment
 from models.monsterweapon import MonsterWeapon
 from .scraper import Scraper
 import time
 import re
-from models.profession import Profession
-from models.ingredient import Ingredient
-from models.equipment import Equipment
-from models.consumable import Consumable
 from models.weapon import Weapon
-from models.recipe import Recipe
 from bs4 import BeautifulSoup
-from sqlalchemy import select
 from helpers import db
-from math import floor
 from sqlalchemy import exists
 
 class Weaponscraper(Scraper):

@@ -2,13 +2,11 @@ from models.weapon import Weapon
 from .scraper import Scraper
 import time
 from helpers import db
-from psycopg2.extras import NumericRange
 import re
 from sqlalchemy import exists
 from bs4 import BeautifulSoup
 from models.monsterequipment import MonsterEquipment
 from models.equipment import Equipment
-from models.resource import Resource
 from models.consumable import Consumable
 from models.monster import Monster
 from models.recipe import Recipe

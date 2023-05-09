@@ -1,4 +1,3 @@
-from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Float, Integer
 from sqlalchemy.sql.schema import Column, ForeignKey 
 from .base import Base

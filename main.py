@@ -1,6 +1,7 @@
 from queue import Queue
 from selenium.webdriver.chrome.options import Options
 from concurrent import futures
+from scrapers.accessoryscraper import Accessoryscraper
 from scrapers.consumablescraper import Consumablescraper
 from scrapers.monsterscraper import Monsterscraper
 from scrapers.resourcescraper import Resourcescraper
@@ -24,13 +25,13 @@ professionscraper = Professionscraper(dr, options, url_queue)
 equipmentscraper = Equipmentscraper(dr, options, url_queue)
 weaponscraper = Weaponscraper(dr, options, url_queue)
 consumablescraper = Consumablescraper(dr, options, url_queue)
-
+accessoryscraper = Accessoryscraper(dr, options, url_queue)
 
 def write_to_log(file_name, msg):
     with open(file_name, 'a+') as file:
         file.write(msg)
 
-def start_scraping(log_file_name,monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None, consumable_url = None):
+def start_scraping(log_file_name,accessory_url = None,monster_url = None, resource_url = None, profession_url = None, equipment_url = None, weapon_url = None, consumable_url = None):
     with futures.ThreadPoolExecutor(max_workers=6) as executer:
         if monster_url != None:
             future_to_url = {executer.submit(monsterscraper.get_link, monster_url, 'Monster', 1, 1): 'URL_FUTURE'}
@@ -44,6 +45,8 @@ def start_scraping(log_file_name,monster_url = None, resource_url = None, profes
             future_to_url = {executer.submit(weaponscraper.get_link, weapon_url, 'Weapon', 1, 1): 'URL_FUTURE'}
         if consumable_url !=None:
             future_to_url = {executer.submit(consumablescraper.get_link, consumable_url, 'Consumable', 1, 13): 'URL_FUTURE'}
+        if accessory_url !=None:
+            future_to_url = {executer.submit(accessoryscraper.get_link, accessory_url, 'Accessory', 1, 13): 'URL_FUTURE'}
 
         while future_to_url:
             remember_done = []
@@ -64,6 +67,8 @@ def start_scraping(log_file_name,monster_url = None, resource_url = None, profes
                     future_to_url[executer.submit(weaponscraper.get_weapon_info, url)] = url
                 elif tag == "Consumable":
                     future_to_url[executer.submit(consumablescraper.get_consumable_info, url)] = url
+                elif tag == "Accessory":
+                    future_to_url[executer.submit(accessoryscraper.get_accessory_info, url)] = url
             for future in done:
                 data = future.result()
                 if data != None and future_to_url[future] != 'URL_FUTURE':
@@ -132,6 +137,15 @@ def scrape_monsters():
         write_to_log('monster_log.txt', '\n')
     for url, reason in monsterscraper.skipped_urls.items():
         write_to_log('monster_log.txt', f'{url}: {reason}\n')
+        
+def scrape_accessories():
+    start_scraping('accessory_log.txt', monster_url='/fr/mmorpg/encyclopedie/accessoires?page=')
+    for url, reason in accessoryscraper.failed_urls.items():
+        write_to_log('accessory_log.txt', f'{url}: {reason}\n')
+    for i in range(0,5):
+        write_to_log('accessory_log.txt', '\n')
+    for url, reason in accessoryscraper.skipped_urls.items():
+        write_to_log('accessory_log.txt', f'{url}: {reason}\n')
 
 def scrape_resources():
     start_scraping_resources('resource_log.txt',resource_url='/fr/mmorpg/encyclopedie/ressources?display=table&page=')
