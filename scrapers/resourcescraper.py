@@ -20,52 +20,6 @@ class Resourcescraper(Scraper):
         super().__init__(driver=driver, options=options, queue=queue)
         self.Session = db.create_session()
         self.session = self.Session()
-
-    def get_type(self,soup):
-        type= soup.find('div', {'class': 'ak-encyclo-detail-type col-xs-6'})
-        type = type.findChild('span', recursive=False)
-        type = type.text
-        return type
-    
-    def get_level(self,soup):
-        level = soup.find('div', {'class': 'ak-encyclo-detail-level col-xs-6 text-right'})
-        level = ''.join(re.findall('[0-9]',level.text))
-        level = int(level)
-        return level
-
-    def get_description(self,soup):
-        description = soup.find('div',{'class':'ak-encyclo-detail-right ak-nocontentpadding'})
-        description = description.findChild('div', {'class':'ak-panel-content'})
-        if description is None:
-            return None
-        description = str.strip(description.text)
-        return description
-
-    def get_dropped_by(self, soup):
-        monster_key_drop_pairings = []
-        titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
-        for title in titles:
-            text = str.strip(title.text)
-            if text == 'Peut être obtenu sur':
-                content = title.find_next_sibling('div')
-                columns = content.findAll('div',{'class':'ak-column ak-container col-xs-12 col-md-6'})
-                for column in columns:
-                    link_raw = column.find('a')
-                    monster_name = column.find('div', {'class':'ak-title'})
-                    if str.strip(monster_name.text):
-                        link_raw = str.split(link_raw['href'],'-')[0]
-                        drop_rate_raw = column.find('div',{'class':'ak-aside'})
-                        drop_rate_raw = drop_rate_raw.text
-                        drop_rate = ''.join(re.findall('[.,0-9]',drop_rate_raw))
-                        monster_pk = ''.join(re.findall('[0-9]', link_raw))
-                        pairing = {'id': monster_pk, 'drop_rate': drop_rate}
-                        monster_key_drop_pairings.append(pairing)
-        return monster_key_drop_pairings
-
-    def get_rarity(self, soup):
-        rarity = soup.find('div',{'class':'ak-object-rarity'})
-        return rarity.findAll('span')[0].text.strip()
-    
        
     def get_recipe(self, soup):
         recipes = []

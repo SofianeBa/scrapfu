@@ -1,25 +1,23 @@
+from models.accessory import Accessory
+from models.equipment import Equipment
+from models.monster import Monster
+from models.monsteraccessory import MonsterAccessory
 from models.weapon import Weapon
 from .scraper import Scraper
-import time
 from helpers import db
-from psycopg2.extras import NumericRange
-import re
-from sqlalchemy import exists
-from bs4 import BeautifulSoup
-from models.monsterequipment import MonsterEquipment
-from models.equipment import Equipment
-from models.resource import Resource
 from models.consumable import Consumable
-from models.monster import Monster
 from models.recipe import Recipe
+from bs4 import BeautifulSoup
+import time, re
+from sqlalchemy import exists, select
 from models.ingredient import Ingredient
 from models.profession import Profession
-from sqlalchemy import select
 
-
-class Equipmentscraper(Scraper):
+class Accessoryscraper(Scraper):
     def __init__(self, driver, options, queue):
-        super().__init__(driver=driver, options=options, queue=queue)
+        super().__init__(driver, options, queue)
+        Session = db.create_session()
+        self.session = Session()
         self.keywords = {
             'PV': 'pv','PA': 'pa','PM': 'pm','PW': 'pw','Portée': 'po','Armure reçue': 'armure_recu',
             'Armure donnée': 'armure_donne', 'Maîtrise Eau': 'maitrise_eau','Maîtrise Feu': 'maitrise_feu',
@@ -28,7 +26,7 @@ class Equipmentscraper(Scraper):
             '% Coup Critique': 'pourcent_critique','% Parade': 'pourcent_parade','Initiative': 'initiative',
             'Esquive': 'esquive','Tacle': 'tacle','Sagesse': 'sagesse','Prospection': 'prospection','Contrôle': 'controle',
             'Volonté' :'volonte','Maîtrise Critique': 'maitrise_critique','Résistance Critique': 'resistance_critique',
-            'Maîtrise Dos': 'maitrise_dos', 'Résistance Dos': 'resistance_dos','Maîtrise Mélée': 'maitrise_melee',
+            'Maîtrise Dos': 'maitrise_dos', 'Résistance Dos': 'resistance_dos','Maîtrise Mêlée': 'maitrise_melee',
             'Maîtrise Distance': 'maitrise_distance','Maîtrise Monocible': 'maitrise_monocible',
             'Maîtrise Zone': 'maitrise_zone','Maîtrise Soin': 'maitrise_soin','Maîtrise Berserk': 'maitrise_berserk',
             'Maîtrise Élémentaire': 'maitrise_elem','Maîtrise sur 1 élément aléatoire': 'maitrise_elem_1',
@@ -42,59 +40,19 @@ class Equipmentscraper(Scraper):
             '% Quantité Récolte en Pêcheur': 'quantite_recolte_pêcheur'
             }
         self.found_keywords = []
-        self.Session = db.create_session()
-        self.session = self.Session()
-
-    def find_effect_fields(self, soup):
-        try:
-            titles = soup.findAll('div', {'class': 'ak-panel-title'})
-            for title in titles:
-                if str.strip(title.text) == 'Caractéristiques':
-                    effects_parent = title.parent
-                    effects_list = effects_parent.findAll('div',{'class':'ak-title'})
-                    return effects_list
-        except Exception as e:
-            print(e)
-            return None
-
-    def reverse_min_max_values(self, min, max):
-        new_min = max
-        new_max = min
-        return (new_min, new_max)
-
-    def get_min_max_values(self, effect_field):
-        rangeText = str.split(effect_field, sep='to')
-        if len(rangeText) > 1:
-            begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
-            end = ''.join(re.findall('[-,0-9]',rangeText[1]))
-            try:
-                begin = int(str.strip(begin))
-            except:
-                begin = end
-            try:
-                end = int(str.strip(end))
-            except:
-                end = begin
-            if begin > end:
-                begin, end = self.reverse_min_max_values(begin, end)
-        else:
-            begin = ''.join(re.findall('[-,0-9]',rangeText[0]))
-            begin_is_int = isinstance(begin, int)
-            if begin_is_int == False:
-                begin = 1
-            end = begin
-        return (begin, end)
-
-    def scrape_effect_fields(self, effect_fields):
-        scraped_fields = {}
-        expression = '$|'.join(keyword for keyword in self.keywords.keys())
-        for effect_field in effect_fields:
-            match = re.search(expression, str.strip(effect_field.text))
-            if match:
-                keyword = match.group(0)
-                scraped_fields[keyword] = (''.join(re.findall('[-,0-9]',effect_field.text)))
-        return scraped_fields
     
+    def find_carac_fields(self, soup):
+            try:
+                titles = soup.findAll('div', {'class': 'ak-panel-title'})
+                for title in titles:
+                    if str.strip(title.text) == 'Caractéristiques':
+                        effects_parent = title.parent
+                        effects_list = effects_parent.findAll('div',{'class':'ak-title'})
+                        return effects_list
+            except Exception as e:
+                print(e)
+                return None
+            
     def get_recipe(self, soup):
         recipes = []
         titles = soup.findAll('div', {'class':'ak-panel-title'},recursive=True)
@@ -125,7 +83,7 @@ class Equipmentscraper(Scraper):
                         is_consumable_id = self.session.query(exists().where(Consumable.id == ingredient_id)).scalar()
                         if is_weapon_id:
                             ingredient = Ingredient(weapon_id=ingredient_id, quantity=amount)
-                        if is_equipment_id:
+                        elif is_equipment_id:
                             ingredient = Ingredient(equipment_id=ingredient_id, quantity=amount)
                         elif is_consumable_id:
                             ingredient = Ingredient(consumable_id=ingredient_id, quantity=amount)
@@ -135,61 +93,70 @@ class Equipmentscraper(Scraper):
                     recipes.append(recipe)
         return recipes
     
-    def get_equipment_info(self, url):
+    def scrape_carac_fields(self, effect_fields):
+        scraped_fields = {}
+        expression = '$|'.join(keyword for keyword in self.keywords.keys())
+        for effect_field in effect_fields:
+            match = re.search(expression, str.strip(effect_field.text))
+            if match:
+                keyword = match.group(0)
+                scraped_fields[keyword] = (''.join(re.findall('[-,0-9]',effect_field.text)))
+        return scraped_fields
+    
+    def get_accessory_info(self, url):
         id = self.get_id(url)
-        equipment_exists = self.session.query(exists().where(Equipment.id == id)).scalar()
-        if not equipment_exists:
-            equipment = Equipment()
-            recipe = Recipe()
+        accessory_exists = self.session.query(exists().where(Accessory.id == id)).scalar()
+
+        if not accessory_exists:
+            accessory = Accessory()
             time.sleep(5)
             driver = self.dr.create_driver(self.options)
             driver.get(url)
             soup = BeautifulSoup(driver.page_source, 'lxml')
             if soup.find('div', {'class': 'ak-404'}) == None:
                 try:
-                    equipment.id = id
-                    equipment.type = self.get_type(soup)
-                    equipment.level = self.get_level(soup)
-                    equipment.name =  self.get_name(soup)
-                    equipment.rarity = self.get_rarity(soup)
-                    equipment.description = self.get_description(soup)
-                    equipment.image = self.get_image_link(soup)
-                    effect_fields = self.find_effect_fields(soup)
+                    accessory.id = id
+                    accessory.type = self.get_type(soup)
+                    accessory.level = self.get_level(soup)
+                    accessory.name =  self.get_name(soup)
+                    accessory.rarity = self.get_rarity(soup)
+                    accessory.description = self.get_description(soup)
+                    accessory.image = self.get_image_link(soup)
+                    effect_fields = self.find_carac_fields(soup)
                     if effect_fields:
                         scraped_fields = self.scrape_carac_fields(effect_fields)
                         keywords = scraped_fields.keys()
                         for keyword in keywords:
                             value = scraped_fields[keyword]
                             if 'Maîtrise sur' in keyword:
-                                setattr(equipment, self.keywords[keyword], value[:-1])
+                                setattr(accessory, self.keywords[keyword], value[:-1])
                             elif 'Résistance sur' in keyword:
-                                setattr(equipment, self.keywords[keyword], value[:-1])
+                                setattr(accessory, self.keywords[keyword], value[:-1])
                             else:
-                                setattr(equipment, self.keywords[keyword], value)
-                    recipe = self.get_recipe(soup, recipe)
-                    if recipe is not None:
-                        equipment.recipe = recipe
+                                setattr(accessory, self.keywords[keyword], value)
+                    recipes = self.get_recipe(soup)
+                    if len(recipes) > 0:
+                        for recipe in recipes:
+                            accessory.recipes.append(recipe)
                     monsters = self.get_dropped_by(soup)
-                    for pairing in monsters:
-                        monster_key = pairing['id']
-                        drop_rate = pairing['drop_rate']
-                        if self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
-                            a = MonsterEquipment(drop_rate=drop_rate, monster_id=monster_key)
-                            equipment.remember.append(a)
-                    if monsters is not None and equipment.monsters is None:
-                        self.failed_urls[url] = 'failed creating resource. All monsters that drop this resource are either incomplete or not present in db. Please check and scrape if needed'
-                    if monsters:
-                        equipment.monsters = monsters
+                    if len(monsters) > 0 :
+                        for pairing in monsters:
+                            monster_key = pairing['id']
+                            drop_rate = pairing['drop_rate']
+                            if self.session.query(exists().where(Monster.id == pairing['id'])).scalar():
+                                a = MonsterAccessory(drop_rate=drop_rate, monster_id=monster_key,accessory_id=accessory.id)
+                                accessory.remember.append(a)
+                        if monsters is not None and accessory.monsters is None:
+                            self.failed_urls[url] = 'failed creating resource. All monsters that drop this resource are either incomplete or not present in db. Please check and scrape if needed'
                     driver.quit()
-                    return equipment
+                    return accessory
                 except Exception as e: 
-                    print(e)
                     driver.quit()
                     self.failed_urls[url] = e
-                    return None
+                    print(e)
             else:
+                self.skipped_urls[url] = "404 found. Skipping"
                 driver.quit()
-                self.skipped_urls[url] = 'skipped url due to 404'
-                return None
         else:
-            self.skipped_urls[url] = 'Already present in db. Skipping'
+            self.skipped_urls[url] = "Accessory found in db. Skipping"
+            return None

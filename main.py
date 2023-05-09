@@ -263,3 +263,9 @@ def test_monster(my_url):
 
 #Problème : Sceau du maître truc
 #Bas de laine (id : 20604) nécessaire pour le craft, mais c'est un accessoire, hors pas d'accessory_id dans la recipe ni dans ingredient....
+
+
+#Ajout accessory dans BDD / Table Recipe
+#Ajout MonsterAccessory dans BDD
+
+#Oubli des images de tous les consommables.... Rescrap tous les consommables pour récup que l'image

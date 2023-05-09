@@ -14,6 +14,7 @@ class Consumable(Base):
     level = Column(Integer, nullable=False)
     description = Column(Text, nullable=False)
     effets = Column(Text, nullable=False)
+    image = Column(String, nullable = False)
     
     recipes = relationship('Recipe', back_populates='consumable')
     ingredients = relationship('Ingredient', back_populates='consumable')

@@ -16,17 +16,6 @@ class Consumablescraper(Scraper):
         super().__init__(driver, options, queue)
         Session = db.create_session()
         self.session = Session()
-        self.keywords = {
-            'Agility':'agility', 
-            'Chance':'chance' ,
-            'Intelligence':'intelligence',
-            'Strength':'strength' ,
-            'Wisdom':'wisdom' ,
-            'HP':'hp' ,
-            'energy points':'energy',
-            'professions':'profession_bonus',
-            'experience bonus': 'xp_bonus' ,
-        }
 
     def find_effect_fields(self, soup):
             try:
@@ -80,26 +69,7 @@ class Consumablescraper(Scraper):
                 value = scraped_fields[keyword]
                 setattr(consumable, self.keywords[keyword], value)
 
-    def get_level(self, soup):
-        level_tag = soup.find('div', {'class':'ak-encyclo-detail-level col-xs-6 text-right'})
-        level_value = ''.join(re.findall('[0-9]', level_tag.text))
-        return level_value
-    
-    def get_description(self, soup):
-        titles = soup.findAll('div', {'class': 'ak-panel-title'})
-        for title in titles:
-            if str.strip(title.text) == 'Description':
-                title_parent = title.parent
-                description_value = title_parent.find('div', {'class':'ak-panel-content'})
-                return str.strip(description_value.text)
 
-    def get_type(self, soup):
-        strong_tags = soup.findAll('strong')
-        for strong_tag in strong_tags:
-            if str.strip(strong_tag.text) == 'Type':
-                parent = strong_tag.parent
-                strong_value = parent.find('span')
-                return strong_value.text
 
     def get_recipe(self, soup):
         recipes = []
@@ -148,10 +118,6 @@ class Consumablescraper(Scraper):
                 sibling = title.findNext('div')
                 content = sibling.find('div', {'class':'ak-title'})
                 return str.strip(content.text)
-
-    def get_rarity(self, soup):
-        rarity = soup.find('div',{'class':'ak-object-rarity'})
-        return rarity.findAll('span')[0].text.strip()
     
     def get_consumable_info(self,url):
         id = self.get_id(url)
